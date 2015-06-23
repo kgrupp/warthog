@@ -14,7 +14,7 @@ resolvers ++= Seq(
   "sbt-idea-repo" at "http://mpeltonen.github.com/maven/"
 )
 
-scalaVersion := "2.10.5"
+scalaVersion := "2.10.4"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
 

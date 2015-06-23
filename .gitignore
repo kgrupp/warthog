@@ -3,8 +3,3 @@ target
 warthog.iml
 .idea
 .idea_modules
-bin
-.classpath
-.cache-main
-.settings/org.scala-ide.sdt.core.prefs
-
