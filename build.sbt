@@ -7,7 +7,8 @@ version := "0.1-SNAPSHOT"
 libraryDependencies ++= Seq(
     "org.specs2" %% "specs2" % "2.3.10",
     "net.java.dev.jna" % "jna" % "4.1.0",
-    "org.scalacheck" %% "scalacheck" % "1.10.0" % "test")
+    "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
+    "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.2")
 
 resolvers ++= Seq(
   "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
