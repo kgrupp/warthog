@@ -126,9 +126,9 @@ public class MiniSatJavaCLI {
               clauseCounter++;
               clause = new IntVec();
             } else if (var < 0) {
-              clause.push((((var * -1) - 1) * 2) ^ 1);
+              clause.push(MSJCoreProver.mkLit((-var)-1, false));
             } else {
-              clause.push((var - 1) * 2);
+              clause.push(MSJCoreProver.mkLit(var-1, true));
             }
           }
         } catch (NumberFormatException e) {

@@ -22,6 +22,10 @@
 
 package org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core;
 
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.HeapWithIndex;
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.IVec;
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.Vec;
@@ -745,5 +749,28 @@ public class MSJCoreProver {
   public boolean solve() {
     IntVec tmp = new IntVec();
     return solve(tmp);
+  }
+  
+  //////////////////////////////////
+  // Additional Stats             //
+  //////////////////////////////////
+  
+  /**
+   * Returns a list of literals which indicates the assignment of each variable.
+   * 
+   * Unassigned variables are ignored and therefore not in this list.
+   * 
+   * @return the list of literals which indicate the assignment
+   */
+  public List<Integer> getModel() {
+	List<Integer> set = new LinkedList<Integer>();
+	Iterator<MSJVariable> it = vars.iterator();
+	while (it.hasNext()) {
+	  MSJVariable var = it.next();
+	  if (var.assignment() != LBool.UNDEF) {
+		  set.add(MSJCoreProver.mkLit(var.num(), var.assignment() == LBool.TRUE));
+	  }
+    }
+    return set;
   }
 }
