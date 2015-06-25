@@ -23,27 +23,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.maxsat.partialweighted
+package org.warthog.pl.optimization.maxsat.apreferredmcs
 
-import org.warthog.pl.datastructures.cnf.{PLLiteral, ImmutablePLClause}
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
-import org.warthog.generic.formulas.Formula
-import org.warthog.pl.formulas.PL
+import scala.collection.SortedSet
+
 import org.warthog.generic.datastructures.cnf.ClauseLike
+import org.warthog.generic.formulas.Formula
+import org.warthog.pl.datastructures.cnf.ImmutablePLClause
+import org.warthog.pl.datastructures.cnf.PLLiteral
+import org.warthog.pl.decisionprocedures.satsolver.Model
+import org.warthog.pl.formulas.PL
 import org.warthog.pl.transformations.CNFUtil
 
 /**
- * Common interface for Partial Weighted MaxSAT solvers.
+ * Common interface for APreferred MCS MaxSAT solvers.
  */
-abstract class PartialWeightedMaxSATSolver() {
+abstract class APreferredMCSMaxSATSolver() {
 
-  protected var minUNSATResult: Option[Long] = None
+  protected var resultMCS: Option[Set[ClauseLike[PL, PLLiteral]]] = None
   protected var model: Option[Model] = None
 
   def name: String
 
   def reset() {
-    minUNSATResult = None
+    resultMCS = None
     model = None
   }
 
@@ -61,12 +64,12 @@ abstract class PartialWeightedMaxSATSolver() {
 
   def undoHardConstraints()
 
-  def solveMinUNSAT(softClauses: Traversable[ClauseLike[PL, PLLiteral]], weights: List[Long]): Option[Long] = {
+  def solveAPreferredMCS(softClauses: SortedSet[ClauseLike[PL, PLLiteral]]): Option[Set[ClauseLike[PL, PLLiteral]]] = {
     if (!areHardConstraintsSatisfiable())
-      minUNSATResult = None
+      resultMCS = None
     else
-      minUNSATResult = Some(solveMinUNSATImpl(softClauses, weights))
-    minUNSATResult
+      resultMCS = Some(solveAPreferredMCSImpl(softClauses))
+    resultMCS
   }
 
   /**
@@ -74,11 +77,12 @@ abstract class PartialWeightedMaxSATSolver() {
    *
    * Assumption: Previously added hard constraints are satisfiable.
    *
-   * @param softClauses
-   * @param weights
+   * First Clause in SortedSet is the most important one.
+   * 
+   * @param softClauses in the L-Preferred order 
    * @return
    */
-  protected def solveMinUNSATImpl(softClauses: Traversable[ClauseLike[PL, PLLiteral]], weights: List[Long]): Long
+  protected def solveAPreferredMCSImpl(softClauses: SortedSet[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL,PLLiteral]]
 
   protected def areHardConstraintsSatisfiable(): Boolean
 

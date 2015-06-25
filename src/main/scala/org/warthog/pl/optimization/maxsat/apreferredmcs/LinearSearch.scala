@@ -23,18 +23,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.maxsat.partialweighted
+package org.warthog.pl.optimization.maxsat.apreferredmcs
 
 import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
 import org.warthog.pl.datastructures.cnf.{PLLiteral, MutablePLClause, ImmutablePLClause}
+import org.warthog.generic.formulas.Formula
 import org.warthog.pl.formulas.{PLAtom, PL}
+import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
+import scala.collection.SortedSet
 
 /**
- * Linear Search algorithm for Partial Weighted MaxSAT.
+ * Linear Search algorithm for A-preferred MCS.
  */
-class LinearSearch(satSolver: Solver, pbcGenerator: PBCtoSAT) extends PartialWeightedMaxSATSolver() {
+class LinearSearch(satSolver: Solver, pbcGenerator: PBCtoSAT) extends APreferredMCSMaxSATSolver() {
 
   private var workingModel: Model = null
 
@@ -57,44 +60,31 @@ class LinearSearch(satSolver: Solver, pbcGenerator: PBCtoSAT) extends PartialWei
     satSolver.undo()
   }
 
-  override protected def solveMinUNSATImpl(softClauses: Traversable[ClauseLike[PL, PLLiteral]], weights: List[Long]): Long = {
+  override protected def solveAPreferredMCSImpl(softClauses: SortedSet[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     satSolver.mark() /* Mark to remove all added clauses after solving */
-    val result = solveMinUNSATImplHelper(softClauses.map(c => new MutablePLClause(c.literals)).toList, weights)
+    val result = solveAPreferredMCSImplHelper(softClauses)
     satSolver.undo()
     result
   }
 
-  private def solveMinUNSATImplHelper(softClauses: List[MutablePLClause], weights: List[Long]): Long = {
-    // Adding blocking variables to each soft clause
-    var blockingVarsIndex = 0
-    var blockingVars = new Array[PLAtom](softClauses.size)
-    for (softClause <- softClauses) {
-      var v = new PLAtom(BinarySearch.BLOCKING_VARIABLE_PREFIX + blockingVarsIndex)
-      blockingVars(blockingVarsIndex) = v
-      softClause.push(new PLLiteral(v, true))
-      blockingVarsIndex += 1
+  private def solveAPreferredMCSImplHelper(softClauses: SortedSet[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+    var gamma:Set[ClauseLike[PL, PLLiteral]] = Set()
+    var delta:Set[ClauseLike[PL, PLLiteral]] = Set()
+    for (clause <- softClauses) {
+      if (sat(gamma + clause)) {
+        gamma += clause
+      } else {
+        delta += clause
+      }
     }
-
-    for (c <- softClauses)
-      satSolver.add(c)
-    sat()
-
-    var ub = cost(softClauses, weights, blockingVars, workingModel) /* Initial upper bound */
-
-    while (sat(pbcGenerator.lt(weights.zip(blockingVars.map(bv => new PLLiteral(bv, true))), ub)))
-      ub = cost(softClauses, weights, blockingVars, workingModel)
-
-    model = Some(workingModel.
-      filterNot(BinarySearch.BLOCKING_VARIABLE_PREFIX).
-      filterNot(PBCtoSAT.DEFAULT_PREFIX))
-    ub
+    delta
   }
 
   override protected def areHardConstraintsSatisfiable() = {
     satSolver.sat() == Solver.SAT
   }
 
-  private def sat(clauses: Set[ImmutablePLClause] = Set.empty): Boolean = {
+  private def sat(clauses: Set[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
     satSolver.mark()
     for (c <- clauses)
       satSolver.add(c)
@@ -104,18 +94,9 @@ class LinearSearch(satSolver: Solver, pbcGenerator: PBCtoSAT) extends PartialWei
     satSolver.undo()
     isSAT
   }
-
-  private def cost(softClauses: List[MutablePLClause], weights: List[Long],
-                   blockingVars: Array[PLAtom], model: Model): Long = {
-    var cost = 0L
-    val posVars = model.positiveVariables
-    for (i <- 0 until softClauses.size)
-      if (posVars.contains(blockingVars(i)))
-        cost += weights(i)
-    cost
-  }
+  
 }
 
 object LinearSearch {
-  val BLOCKING_VARIABLE_PREFIX = "BV___"
+  
 }
