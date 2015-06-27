@@ -25,8 +25,6 @@
 
 package org.warthog.pl.optimization.maxsat.apreferredmcs
 
-import scala.collection.SortedSet
-
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.generic.formulas.Formula
 import org.warthog.pl.datastructures.cnf.ImmutablePLClause
@@ -64,7 +62,7 @@ abstract class APreferredMCSMaxSATSolver() {
 
   def undoHardConstraints()
 
-  def solveAPreferredMCS(softClauses: SortedSet[ClauseLike[PL, PLLiteral]]): Option[Set[ClauseLike[PL, PLLiteral]]] = {
+  def solveAPreferredMCS(softClauses: List[ClauseLike[PL, PLLiteral]]): Option[Set[ClauseLike[PL, PLLiteral]]] = {
     if (!areHardConstraintsSatisfiable())
       resultMCS = None
     else
@@ -77,12 +75,12 @@ abstract class APreferredMCSMaxSATSolver() {
    *
    * Assumption: Previously added hard constraints are satisfiable.
    *
-   * First Clause in SortedSet is the most important one.
+   * First Clause in List is the most important one.
    * 
    * @param softClauses in the L-Preferred order 
    * @return
    */
-  protected def solveAPreferredMCSImpl(softClauses: SortedSet[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL,PLLiteral]]
+  protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL,PLLiteral]]
 
   protected def areHardConstraintsSatisfiable(): Boolean
 

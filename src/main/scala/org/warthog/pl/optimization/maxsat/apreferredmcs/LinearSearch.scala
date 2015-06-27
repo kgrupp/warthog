@@ -32,12 +32,11 @@ import org.warthog.pl.formulas.{PLAtom, PL}
 import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
-import scala.collection.SortedSet
 
 /**
  * Linear Search algorithm for A-preferred MCS.
  */
-class LinearSearch(satSolver: Solver, pbcGenerator: PBCtoSAT) extends APreferredMCSMaxSATSolver() {
+class LinearSearch(satSolver: Solver) extends APreferredMCSMaxSATSolver() {
 
   private var workingModel: Model = null
 
@@ -60,14 +59,14 @@ class LinearSearch(satSolver: Solver, pbcGenerator: PBCtoSAT) extends APreferred
     satSolver.undo()
   }
 
-  override protected def solveAPreferredMCSImpl(softClauses: SortedSet[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+  override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     satSolver.mark() /* Mark to remove all added clauses after solving */
     val result = solveAPreferredMCSImplHelper(softClauses)
     satSolver.undo()
     result
   }
 
-  private def solveAPreferredMCSImplHelper(softClauses: SortedSet[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+  private def solveAPreferredMCSImplHelper(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     var gamma:Set[ClauseLike[PL, PLLiteral]] = Set()
     var delta:Set[ClauseLike[PL, PLLiteral]] = Set()
     for (clause <- softClauses) {
