@@ -33,12 +33,15 @@ import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
 
-/**
- * Linear Search algorithm for A-preferred MCS.
- */
-class LinearSearch(satSolver: Solver) extends APreferredMCSMaxSATSolver() {
 
-  override def name = "LinearSearch"
+/**
+ * Implements the Fast Diag algorithm which was published in 
+ * 'An Efficient Diagnosis Algorithm for Inconsistent Constraint Sets' (2012)
+ * 
+ */
+class FastDiag(satSolver: Solver) extends APreferredMCSMaxSATSolver {
+
+  override def name = "FastDiag"
 
   override def reset() {
     super.reset()
@@ -58,28 +61,39 @@ class LinearSearch(satSolver: Solver) extends APreferredMCSMaxSATSolver() {
   }
 
   override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    satSolver.mark() /* Mark to remove all added clauses after solving */
-    val result = solveAPreferredMCSImplHelper(softClauses)
-    satSolver.undo()
-    result
+    if (softClauses.isEmpty || !areHardConstraintsSatisfiable || sat(softClauses)) {
+      Set()
+    } else {
+      val result = solveAPreferredMCSImplHelper(Set.empty, softClauses.reverse, softClauses.toSet)
+      result
+    }
   }
 
-  private def solveAPreferredMCSImplHelper(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    var gamma:Set[ClauseLike[PL, PLLiteral]] = Set()
-    var delta:Set[ClauseLike[PL, PLLiteral]] = Set()
-    for (clause <- softClauses) {
-      if (sat(gamma + clause)) {
-        gamma += clause
-      } else {
-        delta += clause
-      }
+  /**
+   * Helper function for the FastDiag algorithm (called FD in paper)
+   * 
+   * @param d at start it should be empty
+   * @param softClauses
+   * @param allClauses at start it should be has all soft clauses
+   */
+  private def solveAPreferredMCSImplHelper(d:Set[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]], allClauses:Set[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+    // TODO delete param allClauses
+    if (!d.isEmpty && sat(allClauses)) {
+      Set()
+    } else if (softClauses.size == 1) {
+      softClauses.toSet
+    } else {
+      val k:Int = softClauses.size/2
+      val (softClauses1, softClauses2) = softClauses.splitAt(k)
+      val d1 = solveAPreferredMCSImplHelper(softClauses1.toSet, softClauses2, allClauses.diff(softClauses1.toSet))
+      val d2 = solveAPreferredMCSImplHelper(d1, softClauses1, allClauses.diff(d1))
+      d1.union(d2)
     }
-    delta
   }
 
   override protected def areHardConstraintsSatisfiable() = sat()
 
-  private def sat(clauses: Set[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
+  private def sat(clauses: Traversable[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
     satSolver.mark()
     for (c <- clauses)
       satSolver.add(c)
@@ -87,9 +101,6 @@ class LinearSearch(satSolver: Solver) extends APreferredMCSMaxSATSolver() {
     satSolver.undo()
     isSAT
   }
-  
-}
 
-object LinearSearch {
   
 }

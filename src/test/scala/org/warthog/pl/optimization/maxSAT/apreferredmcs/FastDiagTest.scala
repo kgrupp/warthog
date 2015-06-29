@@ -34,16 +34,15 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ImmutablePLClause => Clause, PLLiteral}
 import org.warthog.pl.formulas.PL
 
-class LinearSearchTest extends Specification {
+class FastDiagTest extends Specification {
 
   val fs = System.getProperty("file.separator")
-  
 
   private def getFileString(folder: String, subFolder: String, file: String) =
     List("src", "test", "resources", folder, subFolder, file).mkString(File.separator)
 
   private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[Set[ClauseLike[PL, PLLiteral]]]) {
-    val solver = new LinearSearch(new Minisat())
+    val solver = new FastDiag(new Minisat())
     val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
     "File " + fileName should {
       "have " + expText in {
