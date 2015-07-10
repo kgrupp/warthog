@@ -25,14 +25,15 @@
 
 package org.warthog.pl.optimization.maxsat.apreferredmcs
 
-import org.specs2.mutable.Specification
 import java.io.File
-import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
-import org.warthog.pl.optimization.maxsat.MaxSATHelper
+
+import org.specs2.mutable.Specification
 import org.warthog.generic.datastructures.cnf.ClauseLike
-import org.warthog.pl.datastructures.cnf.{ImmutablePLClause => Clause, PLLiteral}
+import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
+import org.warthog.pl.datastructures.cnf.PLLiteral
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
 import org.warthog.pl.formulas.PL
+import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
 
 class LinearSearchTest extends Specification {
 

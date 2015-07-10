@@ -46,6 +46,8 @@ class Picosat extends Solver {
   private var lastState = Solver.UNKNOWN
 
   jPicosatInstance.picosat_init()
+  
+  override def name = "Picosat"
 
   override def reset() {
     jPicosatInstance.picosat_reset()

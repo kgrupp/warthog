@@ -27,7 +27,6 @@ package org.warthog.pl.optimization.maxsat.apreferredmcs
 
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.generic.formulas.Formula
-import org.warthog.pl.datastructures.cnf.ImmutablePLClause
 import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.decisionprocedures.satsolver.Model
 import org.warthog.pl.formulas.PL
@@ -42,6 +41,11 @@ abstract class APreferredMCSMaxSATSolver() {
   protected var model: Option[Model] = None
 
   def name: String
+  
+  /**
+   * For benchmark only
+   */
+  var timeUsed:List[TimeUsed] = List()
 
   def reset() {
     resultMCS = None

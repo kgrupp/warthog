@@ -35,6 +35,9 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
  * Common interface for SAT solvers
  */
 trait Solver {
+  
+  def name: String
+  
   /**
    * Reset the solver
    */
