@@ -73,6 +73,13 @@ public class MSJCoreProver {
   ////////////////////////////////
   private final static int litUndef = -1;
 
+  /**
+   * 
+   * 
+   * @param var
+   * @param sign has to be true if var should be negated
+   * @return
+   */
   public static int mkLit(int var, boolean sign) {
     return var + var + (sign ? 1 : 0);
   }
@@ -81,6 +88,11 @@ public class MSJCoreProver {
     return lit ^ 1;
   }
 
+  /**
+   * 
+   * @param lit
+   * @return true if the lit has a sign (this is the case if lit is uneven)
+   */
   public static boolean sign(int lit) {
     return (lit & 1) == 1;
   }
@@ -285,6 +297,7 @@ public class MSJCoreProver {
         if (stats.decisions % params.var_decay_rate == 0) {
           decayVarActivity();
         }
+        // searches next variable to set (test false first)
         int next = pickBranchLit();
         if (next == -1) {
           for (int i = 0; i < vars.size(); i++)

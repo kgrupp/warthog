@@ -25,38 +25,67 @@
 
 package org.warthog.pl.decisionprocedures
 
-import satsolver.{Model, Solver, sat}
-import org.specs2.mutable.Specification
-import org.warthog.pl.formulas.{PL, PLAtom}
-import org.warthog.generic.formulas.{Not, Formula, Verum, Falsum}
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework1
 import java.io.File
-import org.warthog.generic.parsers.DIMACSReader
-import org.warthog.pl.parsers.maxsat.PartialMaxSATReader
+import org.specs2.mutable.Specification
+import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
+import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework2
+import org.warthog.pl.formulas.PLAtom
+import satsolver.Model
+import satsolver.Solver
+import satsolver.sat
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework1
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
+import org.warthog.generic.formulas.Not
+import org.warthog.generic.parsers.DIMACSReader
+import org.warthog.generic.formulas.Falsum
+import org.warthog.generic.formulas.Verum
 
 /**
  * Tests for the picosat bindings
  */
 class MiniSatRework1Test extends Specification {
   /*
-   * By default, tests are executed concurrently. JNI/JNA, however, is able to load _only one_ instance of
-   * (lib)picosat.{so,dylib,dll} per JVM so concurrently accessing the picosat INSTANCE will result in double
-   * instantiation errors and unexpected behaviour.
+   * Throws errors when not executed sequential
    */// TODO
   args(sequential = true)
 
   val (x, y, z) = (PLAtom("x"), PLAtom("y"), PLAtom("z"))
-  val prover = new MinisatRework1()
+  val (v1, v2, v3, v4, v5, v6) = (PLLiteral("1", true), PLLiteral("2", true), PLLiteral("3", true), PLLiteral("4", true), PLLiteral("5", true), PLLiteral("6", true))
+  val (v1f, v2f, v3f, v4f, v5f, v6f) = (PLLiteral("1", false), PLLiteral("2", false), PLLiteral("3", false), PLLiteral("4", false), PLLiteral("5", false), PLLiteral("6", false))
   var resultValue0: Int = _
   var resultValue1: Int = _
   var model: Option[Model] = _
 
   private def getFileString(folder: String, file: String) =
     List("src", "test", "resources", folder, file).mkString(File.separator)
+
+  "1 | ~2 | 3 | 4" should {
+    "be satisfiable" in {
+      val prover = new MinisatRework1()
+      sat(prover) {
+        (solver: Solver) => {
+          solver.add(new Clause(v1f, v2f, v3f, v4f))
+          solver.mark()
+          solver.add(new Clause(v1))
+          resultValue0 = solver.sat()
+          println(solver.getModel())
+          solver.undo()
+          solver.mark()
+          solver.add(new Clause(v1))
+          solver.add(new Clause(v2))
+          resultValue1 = solver.sat()
+          solver.undo()
+        }
+      }
+      resultValue0 must be equalTo Solver.SAT
+      resultValue1 must be equalTo Solver.SAT
+    }
+  }
     
   "~x" should {
     "be satisfiable" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         (solver: Solver) => {
           solver.add(Not(x))
@@ -66,6 +95,7 @@ class MiniSatRework1Test extends Specification {
       resultValue0 must be equalTo Solver.SAT
     }
     "be satisfied by model ~x" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         (solver: Solver) => {
           solver.add(Not(x))
@@ -81,6 +111,7 @@ class MiniSatRework1Test extends Specification {
 
   "x" should {
     "be satisfiable" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         (solver: Solver) => {
           solver.add(x)
@@ -90,6 +121,7 @@ class MiniSatRework1Test extends Specification {
       resultValue0 must be equalTo Solver.SAT
     }
     "be unsatisfiable after adding -x" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         solver => {
           solver.add(x)
@@ -100,6 +132,7 @@ class MiniSatRework1Test extends Specification {
       resultValue0 must be equalTo Solver.UNSAT
     }
     "be satisfied by model x" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         (solver: Solver) => {
           solver.add(x)
@@ -113,6 +146,7 @@ class MiniSatRework1Test extends Specification {
       model.get.positiveVariables must contain(x)
     }
     "be unsatisfiable after adding -x, satisfiable again after dropping -x" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         solver => {
           solver.add(x)
@@ -129,6 +163,7 @@ class MiniSatRework1Test extends Specification {
   }
   "the empty clause" should {
     "be satisfiable" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         s => {
           s.add(Falsum())
@@ -141,6 +176,7 @@ class MiniSatRework1Test extends Specification {
 
   "the empty formula" should {
     "be satisfiable" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         s => {
           s.add(Verum())
@@ -153,6 +189,7 @@ class MiniSatRework1Test extends Specification {
 
   "the verum" should {
     "return true upon sat checking" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         s => {
           s.add(Verum())
@@ -167,6 +204,7 @@ class MiniSatRework1Test extends Specification {
 
   "x and -x" should {
     "be unsatisfiable even after multiple undo calls" in {
+      val prover = new MinisatRework1()
       sat(prover) {
         s => {
           s.add(x)
@@ -185,6 +223,7 @@ class MiniSatRework1Test extends Specification {
     "File " + fileName should {
       "be " + expText in {
         var resultVal = 0
+        val prover = new MinisatRework1()
         sat(prover) {
           (solver: Solver) => {
             prover.add(DIMACSReader.dimacs2PLClauses(getFileString("dimacs", fileName)))

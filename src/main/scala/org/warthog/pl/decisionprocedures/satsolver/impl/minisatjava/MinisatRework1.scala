@@ -49,6 +49,10 @@ class MinisatRework1 extends Solver {
   private val assumptions:IntVec = new IntVec()
   private var assumptionClauses:List[List[ClauseLike[PL, PLLiteral]]] = Nil
   private var lastState = Solver.UNKNOWN
+  
+  // for dimacs output
+  private var hardClauses:List[ClauseLike[PL, PLLiteral]] = Nil
+  private var softClauses:List[ClauseLike[PL, PLLiteral]] = Nil
 
   // no extra init necessary
 
@@ -78,6 +82,7 @@ class MinisatRework1 extends Solver {
       val resClause = new IntVec()
       clauseWithIDs.foreach { x => resClause.push(x) }
       minisatInstance.newClause(resClause, false)
+      hardClauses = clause :: hardClauses
     } else {
     
       // add variable to disable clause if needed (for mark()/undo() needed)
@@ -104,6 +109,7 @@ class MinisatRework1 extends Solver {
         assumptions.set(intVecIndex, getMSJLit(assumptionVar, false, true))
       }
       assumptionClauses = (clause :: assumptionClauses.head) :: assumptionClauses.tail
+      softClauses = clause :: softClauses
     }
     
     if (lastState != Solver.UNSAT)
@@ -139,9 +145,9 @@ class MinisatRework1 extends Solver {
   
   private def getMSJLit(variable:Int, phase:Boolean, isAssumption:Boolean) = {
     if (isAssumption) {
-      MSJCoreProver.mkLit(variable, phase)
+      MSJCoreProver.mkLit(variable, !phase)
     } else {
-      MSJCoreProver.mkLit(variable, phase)
+      MSJCoreProver.mkLit(variable, !phase)
     }
   }
 
@@ -159,6 +165,7 @@ class MinisatRework1 extends Solver {
         val assumptionVar = clauseToVar.get(clause).get
         assumptions.set(intVarIndex, getMSJLit(assumptionVar, true, true))
       }
+      softClauses = softClauses.diff(assumptionClauses.head)
       assumptionClauses = assumptionClauses.tail
     } // else no mark, then ignore undo
   }
@@ -179,11 +186,42 @@ class MinisatRework1 extends Solver {
     lastState match {
       case Solver.UNSAT => None
       case Solver.SAT => {
-        val positiveVariables = map.filter { lit => !MSJCoreProver.sign(lit) }.map { lit => idToVar(lit >> 1) }.toList
-        val negativeVariables = map.filter { lit => MSJCoreProver.sign(lit) }.map { lit => idToVar(lit >> 1) }.toList
+        val positiveVariables = map.filter { lit => MSJCoreProver.sign(lit) }.map { lit => idToVar(lit >> 1) }.toList
+        val negativeVariables = map.filter { lit => !MSJCoreProver.sign(lit) }.map { lit => idToVar(lit >> 1) }.toList
         Some(Model(positiveVariables, negativeVariables))
       }
     }
+  }
+  
+  def getDimacs() {
+    var s:String = ""
+    val hardInt = hardClauses.size+softClauses.size+1
+    val vars = Set[String]()
+    for (clause <- hardClauses) {
+      s += hardInt + " "
+      for (lit <- clause.literals) {
+        vars.+(lit.variable.toString)
+        if (lit.phase) {
+          s += lit.variable + " "
+        } else {
+          s += "-" + lit.variable + " "
+        }
+      }
+      s += "0\n"
+    }
+    for (clause <- softClauses) {
+      s += "1 "
+      for (lit <- clause.literals) {
+        vars.+(lit.variable.toString)
+        if (lit.phase) {
+          s += lit.variable + " "
+        } else {
+          s += "-" + lit.variable + " "
+        }
+      }
+      s += "0\n"
+    }
+    "p wcnf "+hardClauses.size+softClauses.size+" "+vars.size+" "+hardInt+"\n" + s
   }
   
 }

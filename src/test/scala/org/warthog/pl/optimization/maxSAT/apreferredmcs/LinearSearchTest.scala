@@ -32,8 +32,11 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
 import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework1
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework2
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
 
 class LinearSearchTest extends Specification {
 
@@ -65,7 +68,24 @@ class LinearSearchTest extends Specification {
   val (v7f, v8f, v9f, v10f, v11f, v12f) = (PLLiteral("7", false), PLLiteral("8", false), PLLiteral("9", false), PLLiteral("10", false), PLLiteral("11", false), PLLiteral("12", false))
   val (v13f, v14f, v15f, v16f, v17f, v18f) = (PLLiteral("13", false), PLLiteral("14", false), PLLiteral("15", false), PLLiteral("16", false), PLLiteral("17", false), PLLiteral("18", false))
 
-  testWCNFDIMACSFile("partial" + fs + "simple", "emptyAndNotEmptyClauses.wcnf", None)
+  //testWCNFDIMACSFile2("partial" + fs + "ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422)
+  testWCNFDIMACSFile2("partial" + fs + "simple", "testingFastDiag1.wcnf", 1)
+  private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
+    val solver = new LinearSearch(new MinisatRework1())
+    "File " + fileName should {
+      "have " + result1 + " MCS clauses" in {
+        val reader = new PartialWeightedMaxSATReader()
+        reader.read(getFileString("maxsat", subFolder, fileName))
+
+        solver.reset()
+        solver.addHardConstraint(reader.hardClauses)
+        val result = solver.solveAPreferredMCS(reader.softClauses.toList)
+        println(result)
+        result.get.size must be equalTo result1
+      }
+    }
+  }
+  /*testWCNFDIMACSFile("partial" + fs + "simple", "emptyAndNotEmptyClauses.wcnf", None)
 
   testWCNFDIMACSFile("partial" + fs + "simple", "f01.wcnf", Some(Set()))
   testWCNFDIMACSFile("partial" + fs + "simple", "f02.wcnf", Some(Set()))
@@ -94,5 +114,5 @@ class LinearSearchTest extends Specification {
       new Clause(v3f), new Clause(v4f), new Clause(v5f), new Clause(v7f), new Clause(v9f), new Clause(v10f))))
   testWCNFDIMACSFile("partial" + fs + "randomVertexCover", "edges00150_vertices00020.wcnf", Some(Set(new Clause(v1f), new Clause(v2f), 
       new Clause(v3f), new Clause(v4f), new Clause(v5f), new Clause(v6f), new Clause(v7f), new Clause(v8f), new Clause(v10f), new Clause(v11f),
-      new Clause(v12f), new Clause(v13f), new Clause(v14f), new Clause(v15f), new Clause(v16f), new Clause(v17f), new Clause(v18f))))
+      new Clause(v12f), new Clause(v13f), new Clause(v14f), new Clause(v15f), new Clause(v16f), new Clause(v17f), new Clause(v18f))))*/
 }
