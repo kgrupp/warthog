@@ -69,7 +69,7 @@ class LinearSearchTest extends Specification {
   val (v13f, v14f, v15f, v16f, v17f, v18f) = (PLLiteral("13", false), PLLiteral("14", false), PLLiteral("15", false), PLLiteral("16", false), PLLiteral("17", false), PLLiteral("18", false))
 
   //testWCNFDIMACSFile2("partial" + fs + "ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422)
-  testWCNFDIMACSFile2("partial" + fs + "simple", "testingFastDiag1.wcnf", 1)
+  testWCNFDIMACSFile2("partial" + fs + "simple", "testingMinisatRework1.wcnf", 1)
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
     val solver = new LinearSearch(new MinisatRework1())
     "File " + fileName should {

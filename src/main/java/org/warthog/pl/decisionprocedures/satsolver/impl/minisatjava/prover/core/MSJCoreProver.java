@@ -781,7 +781,7 @@ public class MSJCoreProver {
 	while (it.hasNext()) {
 	  MSJVariable var = it.next();
 	  if (var.assignment() != LBool.UNDEF) {
-		  set.add(MSJCoreProver.mkLit(var.num(), var.assignment() == LBool.TRUE));
+		  set.add(MSJCoreProver.mkLit(var.num(), var.assignment() == LBool.FALSE));
 	  }
     }
     return set;

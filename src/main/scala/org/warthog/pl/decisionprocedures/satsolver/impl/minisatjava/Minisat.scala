@@ -134,8 +134,8 @@ class Minisat extends Solver {
     lastState match {
       case Solver.UNSAT => None
       case Solver.SAT => {
-        val positiveVariables = map.filter { lit => MSJCoreProver.sign(lit) }.map { lit => idToVar(lit >> 1) }.toList
-        val negativeVariables = map.filter { lit => !MSJCoreProver.sign(lit) }.map { lit => idToVar(lit >> 1) }.toList
+        val positiveVariables = map.filter { lit => !MSJCoreProver.sign(lit) }.map { lit => idToVar(lit >> 1) }.toList
+        val negativeVariables = map.filter { lit => MSJCoreProver.sign(lit) }.map { lit => idToVar(lit >> 1) }.toList
         Some(Model(positiveVariables, negativeVariables))
       }
     }
