@@ -64,7 +64,7 @@ class MinisatRework2 extends Solver {
   }
   // no extra init necessary
 
-  override def name = "MinisatRework1"
+  override def name = "MinisatRework2"
   
   override def reset() {
     clausesStackHard = Nil

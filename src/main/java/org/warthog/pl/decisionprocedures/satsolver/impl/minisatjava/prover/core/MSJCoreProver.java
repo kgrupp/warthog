@@ -379,6 +379,15 @@ public class MSJCoreProver {
     return confl;
   }
 
+  /**
+   * Calculates the backtracklevel
+   * 
+   * Note: Submethod of 'search'
+   * 
+   * @param conflictClause
+   * @param learntVec
+   * @return
+   */
   protected int analyze(MSJClause conflictClause, IntVec learntVec) {
     MSJClause confl = conflictClause;
     int pathCounter = 0;
@@ -459,6 +468,14 @@ public class MSJCoreProver {
       seen.set(var(toClear.get(l)), false);
   }
 
+  /**
+   * Submethod of 'simplifyLearntClause'
+   * 
+   * @param lit
+   * @param minLevel
+   * @param toClear
+   * @return
+   */
   private boolean analyzeRemovable(int lit, int minLevel, IntVec toClear) {
     IntVec stack = new IntVec();
     stack.push(lit);
@@ -491,6 +508,12 @@ public class MSJCoreProver {
     return true;
   }
 
+  /**
+   * Checks if assignment is SAT or UNSAT
+   * 
+   * @param confl
+   * @param skipFirst ?
+   */
   protected void analyzeFinal(MSJClause confl, boolean skipFirst) {
     conflict.clear();
     if (rootLevel == 0) {
@@ -700,6 +723,9 @@ public class MSJCoreProver {
   // Main entry point for solving //
   //////////////////////////////////
   public boolean solve(IntVec assumps) {
+	for (int i = 0; i < seen.size(); i++) {
+		seen.set(i, false);
+	}
     simplifyDB();
     if (!ok) {
       return false;

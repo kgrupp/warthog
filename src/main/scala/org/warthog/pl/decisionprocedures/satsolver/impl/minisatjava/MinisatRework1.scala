@@ -40,19 +40,26 @@ import scala.collection.mutable.HashMap
 /**
  * Solver Wrapper for Minisat (uses MSJCoreProver)
  */
-class MinisatRework1 extends Solver {
+class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) extends Solver {
+  
+  def this() = this(20, 100)
+  
   private var minisatInstance = new MSJCoreProver()
   private val varToID = HashMap[PLAtom, Int]()
   private val idToVar = HashMap[Int, PLAtom]()
   private val clauseToVar = HashMap[ClauseLike[PL, PLLiteral], Int]()
   private val clauseToID = HashMap[ClauseLike[PL, PLLiteral], Int]()
   private val assumptions:IntVec = new IntVec()
-  private var assumptionClauses:List[List[ClauseLike[PL, PLLiteral]]] = Nil
   private var lastState = Solver.UNKNOWN
+  
+  // AutoReset functionality to hold assumption vars small  
+  private var fullResetCounter = 0
+  private val CALLSUNTILFULLRESET = callsUntilFullReset
+  private val ASSUMPTIONSUNTILFULLRESET = assumptionsUntilFullReset
   
   // for dimacs output
   private var hardClauses:List[ClauseLike[PL, PLLiteral]] = Nil
-  private var softClauses:List[ClauseLike[PL, PLLiteral]] = Nil
+  private var assumptionClauses:List[List[ClauseLike[PL, PLLiteral]]] = Nil
 
   // no extra init necessary
 
@@ -61,19 +68,24 @@ class MinisatRework1 extends Solver {
   override def reset() {
     assumptions.clear()
     assumptionClauses = Nil
+    hardClauses = Nil
     clauseToVar.clear()
     clauseToID.clear()
     minisatInstance = new MSJCoreProver()
     varToID.clear()
     idToVar.clear()
     lastState = Solver.UNKNOWN
+    
+    fullResetCounter = 0
   }
+  
+  override def add(clause: ClauseLike[PL, PLLiteral]) = addInternal(clause,false, false)
 
-  override def add(clause: ClauseLike[PL, PLLiteral]) {
+  private def addInternal(clause: ClauseLike[PL, PLLiteral], keepAssumptionClauses:Boolean, isHard:Boolean) {
     // add clause to solver
     
     // Add clause without assumption variable if no mark is set
-    if (assumptionClauses.isEmpty) {
+    if (isHard || assumptionClauses.isEmpty) {
       // converts ClauseLike to Set[Int]
       // and adds variables to minisatInstance, varToID, idToVar
       val clauseWithIDs = getIDsWithPhase(clause)
@@ -108,8 +120,10 @@ class MinisatRework1 extends Solver {
         
         assumptions.set(intVecIndex, getMSJLit(assumptionVar, false, true))
       }
-      assumptionClauses = (clause :: assumptionClauses.head) :: assumptionClauses.tail
-      softClauses = clause :: softClauses
+      
+      if (!keepAssumptionClauses) {
+        assumptionClauses = (clause :: assumptionClauses.head) :: assumptionClauses.tail
+      }
     }
     
     if (lastState != Solver.UNSAT)
@@ -159,14 +173,27 @@ class MinisatRework1 extends Solver {
   override def undo() {
     lastState = Solver.UNKNOWN
     if (!assumptionClauses.isEmpty) {
-      // TODO maybe a bug with double clauses
-      for (clause <- assumptionClauses.head) {
-        val intVarIndex = clauseToID.get(clause).get
-        val assumptionVar = clauseToVar.get(clause).get
-        assumptions.set(intVarIndex, getMSJLit(assumptionVar, true, true))
+      if (fullResetCounter < CALLSUNTILFULLRESET || assumptions.size() < ASSUMPTIONSUNTILFULLRESET) {
+        // TODO maybe a bug with double clauses
+        for (clause <- assumptionClauses.head) {
+          val intVarIndex = clauseToID.get(clause).get
+          val assumptionVar = clauseToVar.get(clause).get
+          assumptions.set(intVarIndex, getMSJLit(assumptionVar, true, true))
+        }
+        assumptionClauses = assumptionClauses.tail
+        fullResetCounter += 1
+      } else {
+        // reset solver completly
+        val tempAssumptionClauses = assumptionClauses.tail
+        val tempHardClauses = hardClauses
+        reset()
+        val addHard = (clause:ClauseLike[PL, PLLiteral]) => addInternal(clause, true, true)
+        tempHardClauses.foreach(addHard)
+        val addSoft = (clause:ClauseLike[PL, PLLiteral]) => addInternal(clause, true, false)
+        // remember clauses are added in reversed order to satsolver
+        tempAssumptionClauses.foreach(_.foreach(addSoft))
+        assumptionClauses = tempAssumptionClauses
       }
-      softClauses = softClauses.diff(assumptionClauses.head)
-      assumptionClauses = assumptionClauses.tail
     } // else no mark, then ignore undo
   }
 
@@ -196,6 +223,7 @@ class MinisatRework1 extends Solver {
   }
   
   def getDimacs() {
+    val softClauses = assumptionClauses.foldRight(Nil:List[ClauseLike[PL,PLLiteral]])((f,r) => f ++ r) 
     var s:String = ""
     val hardInt = hardClauses.size+softClauses.size+1
     val vars = Set[String]()
