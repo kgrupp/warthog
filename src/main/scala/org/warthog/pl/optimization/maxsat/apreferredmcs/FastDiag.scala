@@ -85,6 +85,7 @@ class FastDiag(satSolver: Solver) extends APreferredMCSMaxSATSolver {
    */
   private def solveAPreferredMCSImplHelper(d:Set[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]], allClauses:Set[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     tUsolveAPreferredMCSImplHelper.start()
+    Thread.sleep(1) // to handle interrupts
     if (!d.isEmpty && sat(allClauses)) {
       tUsolveAPreferredMCSImplHelper.end()
       Set()

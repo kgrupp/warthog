@@ -42,7 +42,7 @@ import scala.collection.mutable.HashMap
  */
 class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) extends Solver {
   
-  def this() = this(20, 100)
+  def this() = this(50, 100)
   
   private var minisatInstance = new MSJCoreProver()
   private val varToID = HashMap[PLAtom, Int]()

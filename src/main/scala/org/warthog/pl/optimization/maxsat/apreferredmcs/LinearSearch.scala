@@ -68,6 +68,7 @@ class LinearSearch(satSolver: Solver) extends APreferredMCSMaxSATSolver() {
     var gamma:Set[ClauseLike[PL, PLLiteral]] = Set()
     var delta:Set[ClauseLike[PL, PLLiteral]] = Set()
     for (clause <- softClauses) {
+      Thread.sleep(1) // to handle interrupts
       if (sat(gamma + clause)) {
         gamma += clause
       } else {

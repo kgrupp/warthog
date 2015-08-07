@@ -78,6 +78,7 @@ class FastDiagLists(satSolver: Solver) extends APreferredMCSMaxSATSolver {
    * @param allClauses at start it should be has all soft clauses
    */
   private def solveAPreferredMCSImplHelper(d:List[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]], allClauses:List[ClauseLike[PL, PLLiteral]]): List[ClauseLike[PL, PLLiteral]] = {
+    Thread.sleep(1) // to handle interrupts
     if (!d.isEmpty && sat(allClauses)) {
       List()
     } else if (softClauses.size == 1) {
