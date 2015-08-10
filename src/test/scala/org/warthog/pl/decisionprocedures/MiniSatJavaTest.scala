@@ -25,23 +25,18 @@
 
 package org.warthog.pl.decisionprocedures
 
-import satsolver.{Model, Solver, sat}
+import satsolver.impl.minisat.MiniSatJava
 import org.specs2.mutable.Specification
-import org.warthog.pl.formulas.{PL, PLAtom}
-import org.warthog.generic.formulas.{Not, Formula, Verum, Falsum}
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
+import satsolver.{Model, Solver, sat}
+import org.warthog.pl.formulas.PLAtom
+import org.warthog.generic.formulas.{And, Not, Verum, Falsum}
 import java.io.File
 import org.warthog.generic.parsers.DIMACSReader
 
 /**
- * Tests for the picosat bindings
+ * Tests for the MiniSatJava bindings
  */
-class MiniSatTest extends Specification {
-  /*
-   * By default, tests are executed concurrently. JNI/JNA, however, is able to load _only one_ instance of
-   * (lib)picosat.{so,dylib,dll} per JVM so concurrently accessing the picosat INSTANCE will result in double
-   * instantiation errors and unexpected behaviour.
-   */// TODO
+class MiniSatJavaTest extends Specification {
   args(sequential = true)
 
   val (x, y, z) = (PLAtom("x"), PLAtom("y"), PLAtom("z"))
@@ -180,14 +175,21 @@ class MiniSatTest extends Specification {
 
   private def testDIMACSFile(fileName: String, expResult: Int) {
     val expText = if (expResult == Solver.SAT) "satisfiable" else "unsatisfiable"
+    val cnf = DIMACSReader.dimacs2PLClauses(getFileString("dimacs", fileName))
     "File " + fileName should {
       "be " + expText in {
         var resultVal = 0
         sat(prover) {
           (solver: Solver) => {
-            prover.add(DIMACSReader.dimacs2PLClauses(getFileString("dimacs", fileName)))
+            prover.add(cnf)
             resultVal = solver.sat()
+            model = solver.getModel()
           }
+        }
+        if (resultVal == Solver.SAT) {
+          println("pos " + model.get.positiveVariables.mkString(", "))
+          println("neg " + model.get.negativeVariables.mkString(", "))
+          And(cnf.map(c => c.toFormula): _*).eval(model.get.toMap) must beTrue
         }
         resultVal must be equalTo expResult
       }
@@ -207,6 +209,7 @@ class MiniSatTest extends Specification {
   testDIMACSFile("f09.cnf", Solver.UNSAT)
   testDIMACSFile("f10.cnf", Solver.UNSAT)
   testDIMACSFile("f11.cnf", Solver.UNSAT)
+  testDIMACSFile("f12.cnf", Solver.SAT)
 
   testDIMACSFile("oneClauseFormula.cnf", Solver.SAT)
   testDIMACSFile("oneEmptyClause.cnf", Solver.UNSAT)
@@ -217,6 +220,4 @@ class MiniSatTest extends Specification {
 
   testDIMACSFile("uuf150-011.cnf", Solver.UNSAT)
   testDIMACSFile("uuf150-024.cnf", Solver.UNSAT)
-
-  
 }

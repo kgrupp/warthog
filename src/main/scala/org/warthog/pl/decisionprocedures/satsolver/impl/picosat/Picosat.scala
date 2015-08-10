@@ -64,6 +64,7 @@ class Picosat extends Solver {
     addClauseWithIDs(clauseWithIDs)
     clausesStack = (clauseWithIDs :: clausesStack)
 
+    /* an unsatisfiable formula doesn't get satisfiable by adding clauses */
     if (lastState != Solver.UNSAT)
       lastState = Solver.UNKNOWN
   }

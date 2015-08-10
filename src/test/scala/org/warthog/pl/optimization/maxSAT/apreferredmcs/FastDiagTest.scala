@@ -28,7 +28,7 @@ package org.warthog.pl.optimization.maxsat.apreferredmcs
 import org.specs2.mutable.Specification
 import java.io.File
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
 import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ImmutablePLClause => Clause, PLLiteral}
@@ -42,7 +42,7 @@ class FastDiagTest extends Specification {
     List("src", "test", "resources", folder, subFolder, file).mkString(File.separator)
 
   private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[Set[ClauseLike[PL, PLLiteral]]]) {
-    val solver = new FastDiag(new Minisat())
+    val solver = new FastDiag(new MiniSatJava())
     val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
     "File " + fileName should {
       "have " + expText in {

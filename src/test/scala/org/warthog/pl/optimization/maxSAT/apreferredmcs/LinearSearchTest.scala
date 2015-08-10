@@ -31,12 +31,10 @@ import org.specs2.mutable.Specification
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
 import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework1
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework2
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MinisatRework1
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
 
 class LinearSearchTest extends Specification {
 
@@ -47,7 +45,7 @@ class LinearSearchTest extends Specification {
     List("src", "test", "resources", folder, subFolder, file).mkString(File.separator)
 
   private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[Set[ClauseLike[PL, PLLiteral]]]) {
-    val solver = new LinearSearch(new Minisat())
+    val solver = new LinearSearch(new MiniSatJava())
     val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
     "File " + fileName should {
       "have " + expText in {

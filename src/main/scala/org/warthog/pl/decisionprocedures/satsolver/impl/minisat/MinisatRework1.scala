@@ -23,7 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava
+package org.warthog.pl.decisionprocedures.satsolver.impl.minisat
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.Map

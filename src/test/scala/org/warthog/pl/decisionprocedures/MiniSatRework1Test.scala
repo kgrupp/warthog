@@ -29,13 +29,12 @@ import java.io.File
 import org.specs2.mutable.Specification
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
 import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework2
 import org.warthog.pl.formulas.PLAtom
 import satsolver.Model
 import satsolver.Solver
 import satsolver.sat
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.MinisatRework1
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.Minisat
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MinisatRework1
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
 import org.warthog.generic.formulas.Not
 import org.warthog.generic.parsers.DIMACSReader
 import org.warthog.generic.formulas.Falsum

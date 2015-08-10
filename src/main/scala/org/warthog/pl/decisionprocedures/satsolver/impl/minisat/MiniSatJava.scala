@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter & Konstantin Grupp
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,84 +23,62 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava
+package org.warthog.pl.decisionprocedures.satsolver.impl.minisat
 
-import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable.Map
+import scala.collection.JavaConverters._
 
+import org.warthog.pl.formulas.{PLAtom, PL}
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.MSJCoreProver
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.nativeType.IntVec
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.decisionprocedures.satsolver.Model
-import org.warthog.pl.decisionprocedures.satsolver.Solver
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.nativeType.IntVec
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.MSJCoreProver
-import org.warthog.pl.formulas.PL
-import org.warthog.pl.formulas.PLAtom
+import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
 
 /**
- * Solver Wrapper for Minisat (uses MSJCoreProver)
+ * Solver Wrapper for MiniSatJava.
  */
-class Minisat extends Solver {
-  private var minisatInstance = new MSJCoreProver()
+class MiniSatJava extends Solver {
+  private var miniSatJavaInstance = new MSJCoreProver()
   private val varToID = Map[PLAtom, Int]()
   private val idToVar = Map[Int, PLAtom]()
   private var clausesStack: List[ClauseLike[PL, PLLiteral]] = Nil
   private var marks: List[Int] = Nil
   private var lastState = Solver.UNKNOWN
 
-  // no extra init necessary
+  override def name = "MiniSatJava"
 
-  override def name = "Minisat"
-  
   override def reset() {
-    clausesStack = Nil
-    marks = Nil
-    halfReset
-  }
-  
-  private def halfReset() {
-    minisatInstance = new MSJCoreProver()
+    miniSatJavaInstance = new MSJCoreProver
     varToID.clear()
     idToVar.clear()
+    clausesStack = Nil
+    marks = Nil
     lastState = Solver.UNKNOWN
   }
 
   override def add(clause: ClauseLike[PL, PLLiteral]) {
-    
-    // add clause to solver
-    addClauseWithIDs(clause)
-
-    // remember clause for mark
     clausesStack = (clause :: clausesStack)
-    
+    addClauseToSolver(clause)
+
+    /* an unsatisfiable formula doesn't get satisfiable by adding clauses */
     if (lastState != Solver.UNSAT)
       lastState = Solver.UNKNOWN
   }
 
-  /**
-   * converts ClauseLike[PL, PLLiteral] to Set[Int]
-   * and adds variables to minisatInstance, varToID, idToVar
-   */
-  private def getIDsWithPhase(clause: ClauseLike[PL, PLLiteral]): Set[Int] = {
-    clause.literals.map(literal => {
-      val (v, phaseFactor) = (literal.variable, literal.phase)
-      MSJCoreProver.mkLit(varToID.getOrElseUpdate(v, {
-        val nextID = minisatInstance.newVar()
+  private def addClauseToSolver(clause: ClauseLike[PL, PLLiteral]) {
+    val clauseAsIntVec = new IntVec(clause.literals.map(literal => {
+      val (v, phase) = (literal.variable, literal.phase)
+      val id = varToID.getOrElseUpdate(v, {
+        miniSatJavaInstance.newVar()
+        val nextID = varToID.size
         idToVar += (nextID -> v)
         nextID
-      }), !phaseFactor)
-    }).toSet
-  }
-  
-  private def addClauseWithIDs(clause: ClauseLike[PL, PLLiteral]) {
-    // converts ClauseLike to Set[Int]
-    // and adds variables to minisatInstance, varToID, idToVar
-    val clauseWithIDs = getIDsWithPhase(clause)
-    
-    // Add clause to minisatInstance
-    val resClause = new IntVec()
-    clauseWithIDs.foreach { x => resClause.push(x) }
-    minisatInstance.newClause(resClause, false)
+      })
+      MSJCoreProver.mkLit(id, !phase)
+    }).toArray)
+
+    miniSatJavaInstance.newClause(clauseAsIntVec, false)
   }
 
   override def mark() {
@@ -111,9 +89,12 @@ class Minisat extends Solver {
     marks match {
       case h :: t => {
         marks = t
-        halfReset
+        miniSatJavaInstance = new MSJCoreProver
+        varToID.clear()
+        idToVar.clear()
         clausesStack = clausesStack.drop(clausesStack.length - h)
-        clausesStack.foreach(addClauseWithIDs)
+        clausesStack.foreach(addClauseToSolver(_))
+        lastState = Solver.UNKNOWN
       }
       case _ => // No mark, then ignore undo
     }
@@ -121,33 +102,36 @@ class Minisat extends Solver {
 
   override def sat(): Int = {
     if (lastState == Solver.UNKNOWN)
-      /* call sat only if solver is in unknown state */
-      lastState = Minisat.minisatStateToSolverState(minisatInstance.solve())
+    /* call sat only if solver is in unknown state */
+      lastState = MiniSatJava.miniSatJavaStateToSolverState(miniSatJavaInstance.solve())
     lastState
   }
 
   override def getModel(): Option[Model] = {
     require(lastState == Solver.SAT || lastState == Solver.UNSAT, "getModel(): Solver needs to be in SAT or UNSAT state!")
 
-    val map:List[Integer] = minisatInstance.getModel().asScala.toList;
-    
     lastState match {
       case Solver.UNSAT => None
       case Solver.SAT => {
-        val positiveVariables = map.filter { lit => !MSJCoreProver.sign(lit) }
-                                  .map { lit => idToVar(MSJCoreProver.`var`(lit)) }.toList
-        val negativeVariables = map.filter { lit => MSJCoreProver.sign(lit) }
-                                  .map { lit => idToVar(MSJCoreProver.`var`(lit)) }.toList
+        val miniSatJavaModel: List[Integer] = miniSatJavaInstance.getModel().asScala.toList
+        val positiveVariables = miniSatJavaModel.filter {
+          lit => !MSJCoreProver.sign(lit)
+        }.map {
+          lit => idToVar(MSJCoreProver.`var`(lit))
+        }.toList
+        val negativeVariables = miniSatJavaModel.filter {
+          lit => MSJCoreProver.sign(lit)
+        }.map {
+          lit => idToVar(MSJCoreProver.`var`(lit))
+        }.toList
         Some(Model(positiveVariables, negativeVariables))
       }
     }
   }
-  
 }
 
-object Minisat {
-  
-  private def minisatStateToSolverState(minisatState: Boolean) = minisatState match {
+object MiniSatJava {
+  private def miniSatJavaStateToSolverState(miniSatJavaState: Boolean) = miniSatJavaState match {
     case false => Solver.UNSAT
     case true => Solver.SAT
   }
