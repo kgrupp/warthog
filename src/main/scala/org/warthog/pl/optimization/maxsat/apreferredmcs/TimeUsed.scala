@@ -19,6 +19,10 @@ class TimeUsed(functionName:String) {
     lastStart = lastStart.tail
   }
   
+  def getName() = functionName
+  def getCounter() = counter
+  def getTime() = time
+  
   def getInfo() = functionName + "\t\t" + time + "ms\t\t" + counter + " Aufrufe"  
   
 }
