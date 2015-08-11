@@ -10,7 +10,7 @@ import org.warthog.pl.datastructures.cnf.PLLiteral
  */
 abstract class SatSolverUsingMCSSolver(satSolver: Solver) extends APreferredMCSMaxSATSolver {
   
-  override def name = "LinearSearchModelExploiting ("+ satSolver.name + ")"
+  override def name = " ("+ satSolver.name + ")"
 
   override def reset() {
     super.reset()
