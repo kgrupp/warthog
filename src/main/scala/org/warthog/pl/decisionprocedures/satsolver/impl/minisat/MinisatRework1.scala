@@ -207,12 +207,11 @@ class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) ext
 
   override def getModel(): Option[Model] = {
     require(lastState == Solver.SAT || lastState == Solver.UNSAT, "getModel(): Solver needs to be in SAT or UNSAT state!")
-
-    val map:List[Integer] = minisatInstance.getModel().asScala.toList;
     
     lastState match {
       case Solver.UNSAT => None
       case Solver.SAT => {
+        val map:List[Integer] = minisatInstance.getModel().asScala.toList
         val positiveVariables = map.filter { lit => !MSJCoreProver.sign(lit) }
                                   .map { lit => idToVar(MSJCoreProver.`var`(lit)) }.toList
         val negativeVariables = map.filter { lit => MSJCoreProver.sign(lit) }

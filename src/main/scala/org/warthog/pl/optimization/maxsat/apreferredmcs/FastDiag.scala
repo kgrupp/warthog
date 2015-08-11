@@ -39,38 +39,22 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
  * 'An Efficient Diagnosis Algorithm for Inconsistent Constraint Sets' (2012)
  * 
  */
-class FastDiag(satSolver: Solver) extends APreferredMCSMaxSATSolver {
+class FastDiag(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver) {
 
-  override def name = "FastDiag ("+ satSolver.name + ")"
+  override def name = "FastDiag" + super.name
   
   val (tUsolveAPreferredMCSImpl, tUsolveAPreferredMCSImplHelper, tUunion, tUdiff, tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("solveAPreferredMCSImpl"), new TimeUsed("tUsolveApreferredMCSImplHelper"), new TimeUsed("union"), new TimeUsed("diff"), new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses")) 
   timeUsed = List(tUsolveAPreferredMCSImpl, tUsolveAPreferredMCSImplHelper, tUunion, tUdiff, tUsat, tUsatAdd, tUsatDel)
 
-  override def reset() {
-    super.reset()
-    satSolver.reset()
-  }
-
-  override def addHardConstraint(clause: ClauseLike[PL, PLLiteral]) {
-    satSolver.add(clause)
-  }
-
-  override def markHardConstraints() {
-    satSolver.mark()
-  }
-
-  def undoHardConstraints() {
-    satSolver.undo()
-  }
-
   override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     tUsolveAPreferredMCSImpl.start()
-    if (softClauses.isEmpty || !areHardConstraintsSatisfiable || sat(softClauses)) {
+    val softClausesSet = softClauses.toSet
+    if (softClauses.isEmpty || !areHardConstraintsSatisfiable || sat(softClausesSet)) {
       tUsolveAPreferredMCSImpl.end()
       Set()
     } else {
       // reverse the list of soft clauses because FastDiag works that way
-      val gamma = solveAPreferredMCSImplHelper(Set.empty, softClauses.reverse, softClauses.toSet)
+      val gamma = solveAPreferredMCSImplHelper(Set.empty, softClauses.reverse, softClausesSet)
       tUsolveAPreferredMCSImpl.end()
       gamma
     }
@@ -111,9 +95,7 @@ class FastDiag(satSolver: Solver) extends APreferredMCSMaxSATSolver {
     }
   }
 
-  override protected def areHardConstraintsSatisfiable() = sat()
-
-  private def sat(clauses: Traversable[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
+  override protected def sat(clauses: Set[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
     tUsatAdd.start()
     satSolver.mark()
     for (c <- clauses)
