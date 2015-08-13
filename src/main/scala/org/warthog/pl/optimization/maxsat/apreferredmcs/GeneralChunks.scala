@@ -48,8 +48,8 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
   var softClausesAry:Array[ClauseLike[PL, PLLiteral]] = Array.empty
 
   override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    softClausesAry = softClauses.toArray
     if (sat()) {
+      softClausesAry = softClauses.toArray
       chunksHelper(false, 0, softClauses.size-1)
       delta
     } else {
