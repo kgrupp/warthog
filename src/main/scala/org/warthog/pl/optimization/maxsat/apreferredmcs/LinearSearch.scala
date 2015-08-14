@@ -48,17 +48,25 @@ class LinearSearch(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver)
   }
 
   private def solveAPreferredMCSImplHelper(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    var gamma:Set[ClauseLike[PL, PLLiteral]] = Set()
     var delta:Set[ClauseLike[PL, PLLiteral]] = Set()
     for (clause <- softClauses) {
       Thread.sleep(1) // to handle interrupts
-      if (sat(gamma + clause)) {
-        gamma += clause
+      if (mySat(clause)) {
+        // add to gamma, treated as hard clause
+        satSolver.add(clause)
       } else {
         delta += clause
       }
     }
     delta
+  }
+  
+  private def mySat(clause:ClauseLike[PL, PLLiteral]): Boolean = {
+    satSolver.mark()
+    satSolver.add(clause)
+    val isSAT = satSolver.sat() == Solver.SAT
+    satSolver.undo()
+    isSAT
   }
   
 }

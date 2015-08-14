@@ -36,6 +36,7 @@ import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.formulas.PLAtom
 import scala.collection.mutable.HashMap
+import scala.util.control.Breaks.{break, breakable}
 
 /**
  * Solver Wrapper for Minisat (uses MSJCoreProver)
@@ -60,6 +61,7 @@ class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) ext
   // for dimacs output
   private var hardClauses:List[ClauseLike[PL, PLLiteral]] = Nil
   private var assumptionClauses:List[List[ClauseLike[PL, PLLiteral]]] = Nil
+  private var assumptionClausesChecker:List[Map[ClauseLike[PL, PLLiteral], Boolean]] = Nil
 
   // no extra init necessary
 
@@ -68,6 +70,7 @@ class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) ext
   override def reset() {
     assumptions.clear()
     assumptionClauses = Nil
+    assumptionClausesChecker = Nil
     hardClauses = Nil
     clauseToVar.clear()
     clauseToID.clear()
@@ -123,6 +126,7 @@ class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) ext
       
       if (!keepAssumptionClauses) {
         assumptionClauses = (clause :: assumptionClauses.head) :: assumptionClauses.tail
+        assumptionClausesChecker = (assumptionClausesChecker.head + (clause -> true)) :: assumptionClausesChecker.tail
       }
     }
     
@@ -168,6 +172,7 @@ class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) ext
   override def mark() {
     val newHead = List()
     assumptionClauses = List() :: assumptionClauses
+    assumptionClausesChecker = Map[ClauseLike[PL,PLLiteral],Boolean]() :: assumptionClausesChecker
   }
 
   override def undo() {
@@ -176,23 +181,42 @@ class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) ext
       if (fullResetCounter < CALLSUNTILFULLRESET || assumptions.size() < ASSUMPTIONSUNTILFULLRESET) {
         // TODO maybe a bug with double clauses
         for (clause <- assumptionClauses.head) {
-          val intVarIndex = clauseToID.get(clause).get
-          val assumptionVar = clauseToVar.get(clause).get
-          assumptions.set(intVarIndex, getMSJLit(assumptionVar, true, true))
+          if (!clauseToID.contains(clause)) {
+            println(clause)
+          } else {
+          
+            val intVarIndex = clauseToID.get(clause).get
+            val assumptionVar = clauseToVar.get(clause).get
+            var clauseNeedToStay = false
+            breakable {
+              for (checkerMap <- assumptionClausesChecker.tail) {
+                if (checkerMap.contains(clause)) {
+                  clauseNeedToStay = true
+                  break
+                }
+              }
+            }
+            if (!clauseNeedToStay) {
+              assumptions.set(intVarIndex, getMSJLit(assumptionVar, true, true))
+            }
+          }
         }
         assumptionClauses = assumptionClauses.tail
+        assumptionClausesChecker = assumptionClausesChecker.tail
         fullResetCounter += 1
       } else {
         // reset solver completly
         val tempAssumptionClauses = assumptionClauses.tail
+        val tempAssumptionClausesChecker = assumptionClausesChecker.tail
         val tempHardClauses = hardClauses
         reset()
+        assumptionClauses = tempAssumptionClauses
+        assumptionClausesChecker = tempAssumptionClausesChecker
         val addHard = (clause:ClauseLike[PL, PLLiteral]) => addInternal(clause, true, true)
         tempHardClauses.foreach(addHard)
         val addSoft = (clause:ClauseLike[PL, PLLiteral]) => addInternal(clause, true, false)
         // remember clauses are added in reversed order to satsolver
-        tempAssumptionClauses.foreach(_.foreach(addSoft))
-        assumptionClauses = tempAssumptionClauses
+        assumptionClauses.foreach(_.foreach(addSoft))
       }
     } // else no mark, then ignore undo
   }
