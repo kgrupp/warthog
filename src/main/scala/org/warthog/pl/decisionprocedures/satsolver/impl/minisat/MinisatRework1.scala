@@ -65,7 +65,7 @@ class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) ext
 
   // no extra init necessary
 
-  override def name = "MinisatRework1"
+  override def name = "MinisatRework1 "+callsUntilFullReset+"/"+assumptionsUntilFullReset
   
   override def reset() {
     assumptions.clear()
@@ -179,7 +179,6 @@ class MinisatRework1(callsUntilFullReset:Int, assumptionsUntilFullReset:Int) ext
     lastState = Solver.UNKNOWN
     if (!assumptionClauses.isEmpty) {
       if (fullResetCounter < CALLSUNTILFULLRESET || assumptions.size() < ASSUMPTIONSUNTILFULLRESET) {
-        // TODO maybe a bug with double clauses
         for (clause <- assumptionClauses.head) {
           if (!clauseToID.contains(clause)) {
             println(clause)
