@@ -43,19 +43,16 @@ class FastDiag(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver) {
 
   override def name = "FastDiag" + super.name
   
-  val (tUsolveAPreferredMCSImpl, tUsolveAPreferredMCSImplHelper, tUunion, tUdiff, tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("solveAPreferredMCSImpl"), new TimeUsed("tUsolveApreferredMCSImplHelper"), new TimeUsed("union"), new TimeUsed("diff"), new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses")) 
-  timeUsed = List(tUsolveAPreferredMCSImpl, tUsolveAPreferredMCSImplHelper, tUunion, tUdiff, tUsat, tUsatAdd, tUsatDel)
+  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses")) 
+  timeUsed = List(tUsat, tUsatAdd, tUsatDel)
 
   override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    tUsolveAPreferredMCSImpl.start()
     val softClausesSet = softClauses.toSet
     if (softClauses.isEmpty || !areHardConstraintsSatisfiable || sat(softClausesSet)) {
-      tUsolveAPreferredMCSImpl.end()
       Set()
     } else {
       // reverse the list of soft clauses because FastDiag works that way
       val gamma = solveAPreferredMCSImplHelper(Set.empty, softClauses.reverse, softClausesSet)
-      tUsolveAPreferredMCSImpl.end()
       gamma
     }
   }
@@ -68,29 +65,19 @@ class FastDiag(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver) {
    * @param allClauses at start it should be has all soft clauses
    */
   private def solveAPreferredMCSImplHelper(d:Set[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]], allClauses:Set[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    tUsolveAPreferredMCSImplHelper.start()
-    Thread.sleep(1) // to handle interrupts
+    Thread.sleep(0) // to handle interrupts
     if (!d.isEmpty && sat(allClauses)) {
-      tUsolveAPreferredMCSImplHelper.end()
       Set()
     } else if (softClauses.size == 1) {
-      tUsolveAPreferredMCSImplHelper.end()
       softClauses.toSet
     } else {
       val k:Int = softClauses.size/2
       val (softClauses1, softClauses2) = softClauses.splitAt(k)
-      tUdiff.start()
       val diff1 = allClauses.diff(softClauses1.toSet)
-      tUdiff.end()
       val d1 = solveAPreferredMCSImplHelper(softClauses1.toSet, softClauses2, diff1)
-      tUdiff.start()
       val diff2 = allClauses.diff(d1)
-      tUdiff.end()
       val d2 = solveAPreferredMCSImplHelper(d1, softClauses1, diff2)
-      tUunion.start()
       val result = d1.union(d2)
-      tUunion.end()
-      tUsolveAPreferredMCSImplHelper.end()
       result
     }
   }
@@ -98,8 +85,15 @@ class FastDiag(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver) {
   override protected def sat(clauses: Set[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
     tUsatAdd.start()
     satSolver.mark()
-    for (c <- clauses)
+    var j = 0
+    for (c <- clauses) {
+      if (100 < j) {
+        Thread.sleep(0) // to handle interrupts
+        j = 0
+      }
       satSolver.add(c)
+      j += 1
+    }
     tUsatAdd.end()
     tUsat.start()
     val isSAT = satSolver.sat() == Solver.SAT

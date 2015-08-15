@@ -44,12 +44,20 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
   
   override def name = "GeneralChunks" + super.name
   
+  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses")) 
+  timeUsed = List(tUsat, tUsatAdd, tUsatDel)
+  
   var delta:Set[ClauseLike[PL, PLLiteral]] = Set.empty
   var softClausesAry:Array[ClauseLike[PL, PLLiteral]] = Array.empty
 
   override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     if (sat()) {
-      softClausesAry = softClauses.toArray
+      softClausesAry = new Array(softClauses.size)
+      var i = 0
+      softClauses.foreach(y => {
+        softClausesAry(i) = y
+        i += 1
+      })
       chunksHelper(false, 0, softClauses.size-1)
       delta
     } else {
@@ -65,6 +73,8 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
    * @param allClauses at start it should be has all soft clauses
    */
   private def chunksHelper(isRedundant:Boolean, start:Int, end:Int):Boolean = {
+    //println("chunksHelper "+start+" to "+end)
+    Thread.sleep(0) // to handle interrupts
     if (!isRedundant && mySat(start, end)) {
       for (i <- start to end) {
         satSolver.add(softClausesAry(i))
@@ -77,6 +87,7 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
       val chunks = calcPartition(start,end)
       var areSubCallsSAT = true
       for (j <- 0 to chunks.size-1) {
+        Thread.sleep(0) // to handle interrupts
         val isConsistent = chunksHelper(areSubCallsSAT && j == (k-1), chunks(j)._1, chunks(j)._2)
         areSubCallsSAT &&= isConsistent
       }
@@ -115,12 +126,24 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
   }
 
   private def mySat(start:Int, end:Int): Boolean = {
+    tUsatAdd.start()
     satSolver.mark()
+    var j = 0
     for (i <- start to end) {
+      if (100 < j) {
+        Thread.sleep(0) // to handle interrupts
+        j = 0
+      }
       satSolver.add(softClausesAry(i))
+      j += 1
     }
+    tUsatAdd.end()
+    tUsat.start()
     val isSAT = satSolver.sat() == Solver.SAT
+    tUsat.end()
+    tUsatDel.start()
     satSolver.undo()
+    tUsatDel.end()
     isSAT
   }
   

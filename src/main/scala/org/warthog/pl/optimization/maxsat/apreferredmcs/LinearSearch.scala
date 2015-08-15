@@ -41,16 +41,14 @@ class LinearSearch(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver)
   override def name = "LinearSearch" + super.name
 
   override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    satSolver.mark() /* Mark to remove all added clauses after solving */
     val result = solveAPreferredMCSImplHelper(softClauses)
-    satSolver.undo()
     result
   }
 
   private def solveAPreferredMCSImplHelper(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     var delta:Set[ClauseLike[PL, PLLiteral]] = Set()
     for (clause <- softClauses) {
-      Thread.sleep(1) // to handle interrupts
+      Thread.sleep(0) // to handle interrupts
       if (mySat(clause)) {
         // add to gamma, treated as hard clause
         satSolver.add(clause)
