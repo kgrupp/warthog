@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter & Konstantin Grupp
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,9 +27,9 @@ package org.warthog.pl.decisionprocedures
 
 import satsolver.impl.minisat.MiniSatJava
 import org.specs2.mutable.Specification
-import satsolver.{Model, Solver, sat}
+import satsolver.{ Model, Solver, sat }
 import org.warthog.pl.formulas.PLAtom
-import org.warthog.generic.formulas.{And, Not, Verum, Falsum}
+import org.warthog.generic.formulas.{ And, Not, Verum, Falsum }
 import java.io.File
 import org.warthog.generic.parsers.DIMACSReader
 
@@ -51,20 +51,22 @@ class MiniSatJavaTest extends Specification {
   "~x" should {
     "be satisfiable" in {
       sat(prover) {
-        (solver: Solver) => {
-          solver.add(Not(x))
-          resultValue0 = solver.sat()
-        }
+        (solver: Solver) =>
+          {
+            solver.add(Not(x))
+            resultValue0 = solver.sat()
+          }
       }
       resultValue0 must be equalTo Solver.SAT
     }
     "be satisfied by model ~x" in {
       sat(prover) {
-        (solver: Solver) => {
-          solver.add(Not(x))
-          solver.sat()
-          model = solver.getModel()
-        }
+        (solver: Solver) =>
+          {
+            solver.add(Not(x))
+            solver.sat()
+            model = solver.getModel()
+          }
       }
       model.get.positiveVariables.size must be equalTo 0
       model.get.negativeVariables.size must be equalTo 1
@@ -75,20 +77,22 @@ class MiniSatJavaTest extends Specification {
   "x" should {
     "be satisfiable" in {
       sat(prover) {
-        (solver: Solver) => {
-          solver.add(x)
-          resultValue0 = solver.sat()
-        }
+        (solver: Solver) =>
+          {
+            solver.add(x)
+            resultValue0 = solver.sat()
+          }
       }
       resultValue0 must be equalTo Solver.SAT
     }
     "be satisfied by model x" in {
       sat(prover) {
-        (solver: Solver) => {
-          solver.add(x)
-          solver.sat()
-          model = solver.getModel()
-        }
+        (solver: Solver) =>
+          {
+            solver.add(x)
+            solver.sat()
+            model = solver.getModel()
+          }
       }
       model.get.positiveVariables.size must be equalTo 1
       model.get.negativeVariables.size must be equalTo 0
@@ -96,24 +100,26 @@ class MiniSatJavaTest extends Specification {
     }
     "be unsatisfiable after adding -x" in {
       sat(prover) {
-        solver => {
-          solver.add(x)
-          solver.add(-x)
-          resultValue0 = solver.sat()
-        }
+        solver =>
+          {
+            solver.add(x)
+            solver.add(-x)
+            resultValue0 = solver.sat()
+          }
       }
       resultValue0 must be equalTo Solver.UNSAT
     }
     "be unsatisfiable after adding -x, satisfiable again after dropping -x" in {
       sat(prover) {
-        solver => {
-          solver.add(x)
-          solver.mark()
-          solver.add(-x)
-          resultValue0 = solver.sat()
-          solver.undo()
-          resultValue1 = solver.sat()
-        }
+        solver =>
+          {
+            solver.add(x)
+            solver.mark()
+            solver.add(-x)
+            resultValue0 = solver.sat()
+            solver.undo()
+            resultValue1 = solver.sat()
+          }
       }
       resultValue0 must be equalTo Solver.UNSAT
       resultValue1 must be equalTo Solver.SAT
@@ -123,10 +129,11 @@ class MiniSatJavaTest extends Specification {
   "the empty clause" should {
     "be satisfiable" in {
       sat(prover) {
-        s => {
-          s.add(Falsum())
-          resultValue0 = s.sat()
-        }
+        s =>
+          {
+            s.add(Falsum())
+            resultValue0 = s.sat()
+          }
       }
       resultValue0 must be equalTo Solver.UNSAT
     }
@@ -135,10 +142,11 @@ class MiniSatJavaTest extends Specification {
   "the empty formula" should {
     "be satisfiable" in {
       sat(prover) {
-        s => {
-          s.add(Verum())
-          resultValue0 = s.sat()
-        }
+        s =>
+          {
+            s.add(Verum())
+            resultValue0 = s.sat()
+          }
       }
       resultValue0 must be equalTo Solver.SAT
     }
@@ -147,11 +155,12 @@ class MiniSatJavaTest extends Specification {
   "the verum" should {
     "return true upon sat checking" in {
       sat(prover) {
-        s => {
-          s.add(Verum())
-          resultValue0 = s.sat()
-          model = s.getModel()
-        }
+        s =>
+          {
+            s.add(Verum())
+            resultValue0 = s.sat()
+            model = s.getModel()
+          }
       }
       model.get.positiveVariables.size must be equalTo 0
       model.get.negativeVariables.size must be equalTo 0
@@ -161,13 +170,14 @@ class MiniSatJavaTest extends Specification {
   "x and -x" should {
     "be unsatisfiable even after multiple undo calls" in {
       sat(prover) {
-        s => {
-          s.add(x)
-          s.add(-x)
-          s.undo()
-          s.undo()
-          resultValue0 = s.sat()
-        }
+        s =>
+          {
+            s.add(x)
+            s.add(-x)
+            s.undo()
+            s.undo()
+            resultValue0 = s.sat()
+          }
       }
       resultValue0 must be equalTo Solver.UNSAT
     }
@@ -180,11 +190,12 @@ class MiniSatJavaTest extends Specification {
       "be " + expText in {
         var resultVal = 0
         sat(prover) {
-          (solver: Solver) => {
-            prover.add(cnf)
-            resultVal = solver.sat()
-            model = solver.getModel()
-          }
+          (solver: Solver) =>
+            {
+              prover.add(cnf)
+              resultVal = solver.sat()
+              model = solver.getModel()
+            }
         }
         if (resultVal == Solver.SAT) {
           println("pos " + model.get.positiveVariables.mkString(", "))

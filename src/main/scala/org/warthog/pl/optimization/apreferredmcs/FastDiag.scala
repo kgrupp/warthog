@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter & Konstantin Grupp
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,30 +23,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.maxsat.apreferredmcs
+package org.warthog.pl.optimization.apreferredmcs
 
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
-import org.warthog.pl.datastructures.cnf.{PLLiteral, MutablePLClause, ImmutablePLClause}
+import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
+import org.warthog.pl.datastructures.cnf.{ PLLiteral, MutablePLClause, ImmutablePLClause }
 import org.warthog.generic.formulas.Formula
-import org.warthog.pl.formulas.{PLAtom, PL}
+import org.warthog.pl.formulas.{ PLAtom, PL }
 import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
 
-
 /**
- * Implements the Fast Diag algorithm which was published in 
+ * Implements the Fast Diag algorithm which was published in
  * 'An Efficient Diagnosis Algorithm for Inconsistent Constraint Sets' (2012)
- * 
+ *
+ * @author Konstantin Grupp
  */
-class FastDiag(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver) {
+class FastDiag(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver) {
 
   override def name = "FastDiag" + super.name
-  
-  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses")) 
+
+  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
   timeUsed = List(tUsat, tUsatAdd, tUsatDel)
 
-  override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+  override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     val softClausesSet = softClauses.toSet
     if (softClauses.isEmpty || !areHardConstraintsSatisfiable || sat(softClausesSet)) {
       Set()
@@ -59,19 +59,19 @@ class FastDiag(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver) {
 
   /**
    * Helper function for the FastDiag algorithm (called FD in paper)
-   * 
+   *
    * @param d at start it should be empty
    * @param softClauses
    * @param allClauses at start it should be has all soft clauses
    */
-  private def solveAPreferredMCSImplHelper(d:Set[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]], allClauses:Set[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+  private def solveAPreferredMCSImplHelper(d: Set[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]], allClauses: Set[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     Thread.sleep(0) // to handle interrupts
     if (!d.isEmpty && sat(allClauses)) {
       Set()
     } else if (softClauses.size == 1) {
       softClauses.toSet
     } else {
-      val k:Int = softClauses.size/2
+      val k: Int = softClauses.size / 2
       val (softClauses1, softClauses2) = softClauses.splitAt(k)
       val diff1 = allClauses.diff(softClauses1.toSet)
       val d1 = solveAPreferredMCSImplHelper(softClauses1.toSet, softClauses2, diff1)
@@ -104,5 +104,4 @@ class FastDiag(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver) {
     isSAT
   }
 
-  
 }

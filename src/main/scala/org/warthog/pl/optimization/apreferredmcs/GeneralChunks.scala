@@ -23,34 +23,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.maxsat.apreferredmcs
+package org.warthog.pl.optimization.apreferredmcs
 
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
-import org.warthog.pl.datastructures.cnf.{PLLiteral, MutablePLClause, ImmutablePLClause}
+import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
+import org.warthog.pl.datastructures.cnf.{ PLLiteral, MutablePLClause, ImmutablePLClause }
 import org.warthog.generic.formulas.Formula
-import org.warthog.pl.formulas.{PLAtom, PL}
+import org.warthog.pl.formulas.{ PLAtom, PL }
 import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
 
-
 /**
- * Implements the general chunks approach (4.1 from paper) 
- * 
+ * Implements the general chunks approach (4.1 from paper)
+ *
+ * @author Konstantin Grupp
  */
-class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(satSolver) {
+class GeneralChunks(satSolver: Solver, k: Int) extends SATBasedAPreferredMCSSolver(satSolver) {
 
-  def this(satSolver:Solver) = this(satSolver, 10)
-  
+  def this(satSolver: Solver) = this(satSolver, 10)
+
   override def name = "GeneralChunks" + super.name
-  
-  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses")) 
-  timeUsed = List(tUsat, tUsatAdd, tUsatDel)
-  
-  var delta:Set[ClauseLike[PL, PLLiteral]] = Set.empty
-  var softClausesAry:Array[ClauseLike[PL, PLLiteral]] = Array.empty
 
-  override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
+  timeUsed = List(tUsat, tUsatAdd, tUsatDel)
+
+  var delta: Set[ClauseLike[PL, PLLiteral]] = Set.empty
+  var softClausesAry: Array[ClauseLike[PL, PLLiteral]] = Array.empty
+
+  override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     if (sat()) {
       softClausesAry = new Array(softClauses.size)
       var i = 0
@@ -58,7 +58,7 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
         softClausesAry(i) = y
         i += 1
       })
-      chunksHelper(false, 0, softClauses.size-1)
+      chunksHelper(false, 0, softClauses.size - 1)
       delta
     } else {
       Set()
@@ -67,40 +67,40 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
 
   /**
    * Helper function for the chunks algorithm
-   * 
+   *
    * @param d at start it should be empty
    * @param softClauses
    * @param allClauses at start it should be has all soft clauses
    */
-  private def chunksHelper(isRedundant:Boolean, start:Int, end:Int):Boolean = {
+  private def chunksHelper(isRedundant: Boolean, start: Int, end: Int): Boolean = {
     //println("chunksHelper "+start+" to "+end)
     Thread.sleep(0) // to handle interrupts
     if (!isRedundant && mySat(start, end)) {
       for (i <- start to end) {
         satSolver.add(softClausesAry(i))
-      } 
+      }
       true
     } else if (end == start) {
       delta += softClausesAry(start)
       false
     } else {
-      val chunks = calcPartition(start,end)
+      val chunks = calcPartition(start, end)
       var areSubCallsSAT = true
-      for (j <- 0 to chunks.size-1) {
+      for (j <- 0 to chunks.size - 1) {
         Thread.sleep(0) // to handle interrupts
-        val isConsistent = chunksHelper(areSubCallsSAT && j == (k-1), chunks(j)._1, chunks(j)._2)
+        val isConsistent = chunksHelper(areSubCallsSAT && j == (k - 1), chunks(j)._1, chunks(j)._2)
         areSubCallsSAT &&= isConsistent
       }
       areSubCallsSAT
     }
   }
-  
-  private def calcPartition(start:Int, end:Int):Array[(Int, Int)] = {
+
+  private def calcPartition(start: Int, end: Int): Array[(Int, Int)] = {
     val difference = end - start + 1
     var size = difference / k
     val modulo = difference % k
     if (size == 0) {
-      val result:Array[(Int,Int)] = new Array(difference)
+      val result: Array[(Int, Int)] = new Array(difference)
       var j = 0
       for (i <- start to end) {
         result(j) = (i, i)
@@ -108,13 +108,13 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
       }
       result
     } else {
-      val result:Array[(Int,Int)] = new Array(k)
+      val result: Array[(Int, Int)] = new Array(k)
       if (modulo != 0) size += 1
-      var subEnd = start-1
-      for (i <- 0 to k-1) {
+      var subEnd = start - 1
+      for (i <- 0 to k - 1) {
         if (modulo != 0 && i == modulo) size -= 1
         val subStart = subEnd + 1
-        if (i == k-1) {
+        if (i == k - 1) {
           subEnd = end
         } else {
           subEnd = subStart + size - 1
@@ -125,7 +125,7 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
     }
   }
 
-  private def mySat(start:Int, end:Int): Boolean = {
+  private def mySat(start: Int, end: Int): Boolean = {
     tUsatAdd.start()
     satSolver.mark()
     var j = 0
@@ -146,5 +146,5 @@ class GeneralChunks(satSolver: Solver, k:Int) extends SatSolverUsingMCSSolver(sa
     tUsatDel.end()
     isSAT
   }
-  
+
 }

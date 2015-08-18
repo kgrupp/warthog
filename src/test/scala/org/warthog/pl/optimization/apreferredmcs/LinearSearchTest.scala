@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter & Konstantin Grupp
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,7 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.maxsat.apreferredmcs
+package org.warthog.pl.optimization.apreferredmcs
 
 import java.io.File
 
@@ -31,15 +31,19 @@ import org.specs2.mutable.Specification
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
 import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MinisatRework1
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatAssumption
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
 
+/**
+ * Tests linear search
+ *
+ * @author Konstantin Grupp
+ */
 class LinearSearchTest extends Specification {
 
   val fs = System.getProperty("file.separator")
-  
 
   private def getFileString(folder: String, subFolder: String, file: String) =
     List("src", "test", "resources", folder, subFolder, file).mkString(File.separator)
@@ -54,13 +58,13 @@ class LinearSearchTest extends Specification {
 
         solver.reset()
         solver.addHardConstraint(reader.hardClauses)
-        val result = solver.solveAPreferredMCS(reader.softClauses.toList)
+        val result = solver.solve(reader.softClauses.toList)
 
         result must be equalTo expResult
       }
     }
   }
-  
+
   val (v1, v2, v3, v4, v5, v6) = (PLLiteral("1", true), PLLiteral("2", true), PLLiteral("3", true), PLLiteral("4", true), PLLiteral("5", true), PLLiteral("6", true))
   val (v1f, v2f, v3f, v4f, v5f, v6f) = (PLLiteral("1", false), PLLiteral("2", false), PLLiteral("3", false), PLLiteral("4", false), PLLiteral("5", false), PLLiteral("6", false))
   val (v7f, v8f, v9f, v10f, v11f, v12f) = (PLLiteral("7", false), PLLiteral("8", false), PLLiteral("9", false), PLLiteral("10", false), PLLiteral("11", false), PLLiteral("12", false))
@@ -69,7 +73,7 @@ class LinearSearchTest extends Specification {
   testWCNFDIMACSFile2("partial" + fs + "ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422)
   testWCNFDIMACSFile2("partial" + fs + "simple", "testingMinisatRework1.wcnf", 1)
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
-    val solver = new LinearSearch(new MinisatRework1())
+    val solver = new LinearSearch(new MiniSatAssumption())
     "File " + fileName should {
       "have " + result1 + " MCS clauses" in {
         val reader = new PartialWeightedMaxSATReader()
@@ -77,7 +81,7 @@ class LinearSearchTest extends Specification {
 
         solver.reset()
         solver.addHardConstraint(reader.hardClauses)
-        val result = solver.solveAPreferredMCS(reader.softClauses.toList)
+        val result = solver.solve(reader.softClauses.toList)
         result.get.size must be equalTo result1
       }
     }
@@ -107,9 +111,9 @@ class LinearSearchTest extends Specification {
   testWCNFDIMACSFile("partial" + fs + "simple", "oneVariableOneClauseFormulaHard.wcnf", Some(Set()))
   testWCNFDIMACSFile("partial" + fs + "simple", "threeEmptyClauses.wcnf", None)
 
-  testWCNFDIMACSFile("partial" + fs + "randomVertexCover", "edges00040_vertices00010.wcnf", Some(Set(new Clause(v1f), new Clause(v2f), 
-      new Clause(v3f), new Clause(v4f), new Clause(v5f), new Clause(v7f), new Clause(v9f), new Clause(v10f))))
-  testWCNFDIMACSFile("partial" + fs + "randomVertexCover", "edges00150_vertices00020.wcnf", Some(Set(new Clause(v1f), new Clause(v2f), 
-      new Clause(v3f), new Clause(v4f), new Clause(v5f), new Clause(v6f), new Clause(v7f), new Clause(v8f), new Clause(v10f), new Clause(v11f),
-      new Clause(v12f), new Clause(v13f), new Clause(v14f), new Clause(v15f), new Clause(v16f), new Clause(v17f), new Clause(v18f))))
+  testWCNFDIMACSFile("partial" + fs + "randomVertexCover", "edges00040_vertices00010.wcnf", Some(Set(new Clause(v1f), new Clause(v2f),
+    new Clause(v3f), new Clause(v4f), new Clause(v5f), new Clause(v7f), new Clause(v9f), new Clause(v10f))))
+  testWCNFDIMACSFile("partial" + fs + "randomVertexCover", "edges00150_vertices00020.wcnf", Some(Set(new Clause(v1f), new Clause(v2f),
+    new Clause(v3f), new Clause(v4f), new Clause(v5f), new Clause(v6f), new Clause(v7f), new Clause(v8f), new Clause(v10f), new Clause(v11f),
+    new Clause(v12f), new Clause(v13f), new Clause(v14f), new Clause(v15f), new Clause(v16f), new Clause(v17f), new Clause(v18f))))
 }

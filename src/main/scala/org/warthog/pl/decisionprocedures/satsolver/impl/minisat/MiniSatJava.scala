@@ -28,12 +28,12 @@ package org.warthog.pl.decisionprocedures.satsolver.impl.minisat
 import scala.collection.mutable.Map
 import scala.collection.JavaConverters._
 
-import org.warthog.pl.formulas.{PLAtom, PL}
+import org.warthog.pl.formulas.{ PLAtom, PL }
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.MSJCoreProver
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.nativeType.IntVec
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
+import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
 
 /**
  * Solver Wrapper for MiniSatJava.
@@ -102,7 +102,7 @@ class MiniSatJava extends Solver {
 
   override def sat(): Int = {
     if (lastState == Solver.UNKNOWN)
-    /* call sat only if solver is in unknown state */
+      /* call sat only if solver is in unknown state */
       lastState = MiniSatJava.miniSatJavaStateToSolverState(miniSatJavaInstance.solve())
     lastState
   }
@@ -133,6 +133,6 @@ class MiniSatJava extends Solver {
 object MiniSatJava {
   private def miniSatJavaStateToSolverState(miniSatJavaState: Boolean) = miniSatJavaState match {
     case false => Solver.UNSAT
-    case true => Solver.SAT
+    case true  => Solver.SAT
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter & Konstantin Grupp
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,33 +23,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.maxsat.apreferredmcs
+package org.warthog.pl.optimization.apreferredmcs
 
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
-import org.warthog.pl.datastructures.cnf.{PLLiteral, MutablePLClause, ImmutablePLClause}
+import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
+import org.warthog.pl.datastructures.cnf.{ PLLiteral, MutablePLClause, ImmutablePLClause }
 import org.warthog.generic.formulas.Formula
-import org.warthog.pl.formulas.{PLAtom, PL}
+import org.warthog.pl.formulas.{ PLAtom, PL }
 import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
 
 /**
  * Linear Search algorithm for A-preferred MCS.
+ *
+ * @author Konstantin Grupp
  */
-class LinearSearch(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver) {
+class LinearSearch(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver) {
 
   override def name = "LinearSearch" + super.name
 
-  override protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    val result = solveAPreferredMCSImplHelper(softClauses)
-    result
-  }
-
-  private def solveAPreferredMCSImplHelper(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    var delta:Set[ClauseLike[PL, PLLiteral]] = Set()
+  override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+    var delta: Set[ClauseLike[PL, PLLiteral]] = Set()
     for (clause <- softClauses) {
       Thread.sleep(0) // to handle interrupts
-      if (mySat(clause)) {
+      if (sat(clause)) {
         // add to gamma, treated as hard clause
         satSolver.add(clause)
       } else {
@@ -58,13 +55,5 @@ class LinearSearch(satSolver: Solver) extends SatSolverUsingMCSSolver(satSolver)
     }
     delta
   }
-  
-  private def mySat(clause:ClauseLike[PL, PLLiteral]): Boolean = {
-    satSolver.mark()
-    satSolver.add(clause)
-    val isSAT = satSolver.sat() == Solver.SAT
-    satSolver.undo()
-    isSAT
-  }
-  
+
 }

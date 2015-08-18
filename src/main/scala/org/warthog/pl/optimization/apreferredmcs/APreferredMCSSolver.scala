@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter & Konstantin Grupp
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,7 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.maxsat.apreferredmcs
+package org.warthog.pl.optimization.apreferredmcs
 
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.generic.formulas.Formula
@@ -34,21 +34,23 @@ import org.warthog.pl.transformations.CNFUtil
 
 /**
  * Common interface for APreferred MCS MaxSAT solvers.
+ *
+ * @author Konstantin Grupp
  */
 abstract class APreferredMCSMaxSATSolver() {
 
-  protected var resultMCS: Option[Set[ClauseLike[PL, PLLiteral]]] = None
+  protected var result: Option[Set[ClauseLike[PL, PLLiteral]]] = None
   protected var model: Option[Model] = None
 
   def name: String
-  
+
   /**
    * For benchmark only
    */
-  var timeUsed:List[TimeUsed] = List()
+  var timeUsed: List[TimeUsed] = List()
 
   def reset() {
-    resultMCS = None
+    result = None
     model = None
   }
 
@@ -66,12 +68,12 @@ abstract class APreferredMCSMaxSATSolver() {
 
   def undoHardConstraints()
 
-  def solveAPreferredMCS(softClauses: List[ClauseLike[PL, PLLiteral]]): Option[Set[ClauseLike[PL, PLLiteral]]] = {
+  def solve(softClauses: List[ClauseLike[PL, PLLiteral]]): Option[Set[ClauseLike[PL, PLLiteral]]] = {
     if (!areHardConstraintsSatisfiable())
-      resultMCS = None
+      result = None
     else
-      resultMCS = Some(solveAPreferredMCSImpl(softClauses))
-    resultMCS
+      result = Some(solveImpl(softClauses))
+    result
   }
 
   /**
@@ -80,11 +82,11 @@ abstract class APreferredMCSMaxSATSolver() {
    * Assumption: Previously added hard constraints are satisfiable.
    *
    * First Clause in List is the most important one.
-   * 
-   * @param softClauses in the L-Preferred order 
+   *
+   * @param softClauses in the L-Preferred order
    * @return
    */
-  protected def solveAPreferredMCSImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL,PLLiteral]]
+  protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]]
 
   protected def areHardConstraintsSatisfiable(): Boolean
 
