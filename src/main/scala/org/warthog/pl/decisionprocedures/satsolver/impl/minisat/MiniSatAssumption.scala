@@ -33,6 +33,7 @@ import org.warthog.pl.decisionprocedures.satsolver.Model
 import org.warthog.pl.decisionprocedures.satsolver.Solver
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.nativeType.IntVec
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.MSJCoreProver
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.datastructures.LBool
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.formulas.PLAtom
 import scala.collection.mutable.HashMap
@@ -47,7 +48,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
 
   def this() = this(50, 100)
 
-  private var minisatInstance = new MSJCoreProver()
+  private var miniSatJavaInstance = new MSJCoreProver()
   private val varToID = HashMap[PLAtom, Int]()
   private val idToVar = HashMap[Int, PLAtom]()
   private val clauseToVar = HashMap[ClauseLike[PL, PLLiteral], Int]()
@@ -76,7 +77,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
     hardClauses = Nil
     clauseToVar.clear()
     clauseToID.clear()
-    minisatInstance = new MSJCoreProver()
+    miniSatJavaInstance = new MSJCoreProver()
     varToID.clear()
     idToVar.clear()
     lastState = Solver.UNKNOWN
@@ -92,13 +93,13 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
     // Add clause without assumption variable if no mark is set
     if (isHard || assumptionClauses.isEmpty) {
       // converts ClauseLike to Set[Int]
-      // and adds variables to minisatInstance, varToID, idToVar
+      // and adds variables to miniSatJavaInstance, varToID, idToVar
       val clauseWithIDs = getIDsWithPhase(clause)
 
-      // Add clause to minisatInstance
+      // Add clause to miniSatJavaInstance
       val resClause = new IntVec()
       clauseWithIDs.foreach { x => resClause.push(x) }
-      minisatInstance.newClause(resClause, false)
+      miniSatJavaInstance.newClause(resClause, false)
       hardClauses = clause :: hardClauses
     } else {
 
@@ -109,14 +110,14 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
         assumptionVar = newAssupmtionVar(clause)
 
         // converts ClauseLike to Set[Int]
-        // and adds variables to minisatInstance, varToID, idToVar
+        // and adds variables to miniSatJavaInstance, varToID, idToVar
         val clauseWithIDs = getIDsWithPhase(clause)
 
-        // Add clause to minisatInstance
+        // Add clause to miniSatJavaInstance
         val resClause = new IntVec()
         clauseWithIDs.foreach { x => resClause.push(x) }
         resClause.push(getMSJLit(assumptionVar, true, false))
-        minisatInstance.newClause(resClause, false)
+        miniSatJavaInstance.newClause(resClause, false)
 
       } else {
         assumptionVar = assumptionVarTest.get
@@ -137,13 +138,13 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
 
   /**
    * converts ClauseLike[PL, PLLiteral] to Set[Int]
-   * and adds variables to minisatInstance, varToID, idToVar
+   * and adds variables to miniSatJavaInstance, varToID, idToVar
    */
   private def getIDsWithPhase(clause: ClauseLike[PL, PLLiteral]): Set[Int] = {
     clause.literals.map(literal => {
       val (v, phaseFactor) = (literal.variable, literal.phase)
       getMSJLit(varToID.getOrElseUpdate(v, {
-        val nextID = minisatInstance.newVar()
+        val nextID = miniSatJavaInstance.newVar()
         idToVar += (nextID -> v)
         nextID
       }), phaseFactor, false)
@@ -152,7 +153,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
 
   private def newAssupmtionVar(clause: ClauseLike[PL, PLLiteral]) = {
     val variable = new PLAtom("AssumptionVar for: " + clause.toString())
-    val nextID = minisatInstance.newVar()
+    val nextID = miniSatJavaInstance.newVar()
     val intVarIndex = assumptions.size()
     assumptions.push(getMSJLit(nextID, false, true))
     idToVar += (nextID -> variable)
@@ -224,7 +225,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
   override def sat(): Int = {
     if (lastState == Solver.UNKNOWN) {
       /* call sat only if solver is in unknown state */
-      lastState = MiniSatAssumption.minisatStateToSolverState(minisatInstance.solve(assumptions))
+      lastState = MiniSatAssumption.minisatStateToSolverState(miniSatJavaInstance.solve(assumptions))
     }
     lastState
   }
@@ -235,7 +236,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
     lastState match {
       case Solver.UNSAT => None
       case Solver.SAT => {
-        val map: List[Integer] = minisatInstance.getModel().asScala.toList
+        val map: List[Integer] = miniSatJavaInstance.getModel().asScala.toList
         val positiveVariables = map.filter { lit => !MSJCoreProver.sign(lit) }
           .map { lit => idToVar(MSJCoreProver.`var`(lit)) }.toList
         val negativeVariables = map.filter { lit => MSJCoreProver.sign(lit) }
@@ -244,6 +245,16 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
       }
     }
   }
+
+  override def getVarState(variable: PLAtom): Option[Boolean] =
+    varToID.get(variable) match {
+      case Some(v) => miniSatJavaInstance.getVarState(v) match {
+        case LBool.TRUE  => Some(true)
+        case LBool.FALSE => Some(false)
+        case LBool.UNDEF => None
+      }
+      case None   => None
+    }
 
   def getDimacs() {
     val softClauses = assumptionClauses.foldRight(Nil: List[ClauseLike[PL, PLLiteral]])((f, r) => f ++ r)

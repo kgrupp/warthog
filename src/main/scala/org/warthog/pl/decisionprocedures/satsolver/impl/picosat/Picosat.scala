@@ -26,12 +26,11 @@
 package org.warthog.pl.decisionprocedures.satsolver.impl.picosat
 
 import scala.collection.mutable.Map
-
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
-import org.warthog.pl.formulas.{PLAtom, PL}
+import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
+import org.warthog.pl.formulas.{ PLAtom, PL }
 import org.warthog.generic.formulas._
 import org.warthog.pl.transformations.CNFUtil
-import org.warthog.pl.datastructures.cnf.{PLLiteral, ImmutablePLClause}
+import org.warthog.pl.datastructures.cnf.{ PLLiteral, ImmutablePLClause }
 import org.warthog.generic.datastructures.cnf.ClauseLike
 
 /**
@@ -46,7 +45,7 @@ class Picosat extends Solver {
   private var lastState = Solver.UNKNOWN
 
   jPicosatInstance.picosat_init()
-  
+
   override def name = "Picosat"
 
   override def reset() {
@@ -105,7 +104,7 @@ class Picosat extends Solver {
 
   override def sat(): Int = {
     if (lastState == Solver.UNKNOWN)
-    /* call sat only if solver is in unknown state */
+      /* call sat only if solver is in unknown state */
       lastState = Picosat.jPicoSatStateToSolverState(
         jPicosatInstance.picosat_sat(JPicosat.INFINITY_DECISION_LEVELS))
     lastState
@@ -132,12 +131,16 @@ class Picosat extends Solver {
       }
     }
   }
+
+  override def getVarState(variable: PLAtom): Option[Boolean] = {
+    throw new UnsupportedOperationException()
+  }
 }
 
 object Picosat {
   private def jPicoSatStateToSolverState(jPicoSatState: Int) = jPicoSatState match {
-    case JPicosat.UNSAT => Solver.UNSAT
-    case JPicosat.SAT => Solver.SAT
+    case JPicosat.UNSAT   => Solver.UNSAT
+    case JPicosat.SAT     => Solver.SAT
     case JPicosat.UNKNOWN => Solver.UNKNOWN
   }
 }

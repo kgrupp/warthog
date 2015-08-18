@@ -27,10 +27,10 @@ package org.warthog.pl.decisionprocedures.satsolver.impl.minisat
 
 import scala.collection.mutable.Map
 import scala.collection.JavaConverters._
-
 import org.warthog.pl.formulas.{ PLAtom, PL }
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.MSJCoreProver
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.nativeType.IntVec
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.datastructures.LBool
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
@@ -128,6 +128,17 @@ class MiniSatJava extends Solver {
       }
     }
   }
+
+  override def getVarState(variable: PLAtom): Option[Boolean] =
+    varToID.get(variable) match {
+      case Some(v) => miniSatJavaInstance.getVarState(v) match {
+        case LBool.TRUE  => Some(true)
+        case LBool.FALSE => Some(false)
+        case LBool.UNDEF => None
+      }
+      case None => None
+    }
+
 }
 
 object MiniSatJava {

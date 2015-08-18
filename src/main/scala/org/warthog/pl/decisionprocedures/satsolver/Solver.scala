@@ -25,17 +25,18 @@
 
 package org.warthog.pl.decisionprocedures.satsolver
 
-import org.warthog.generic.formulas.{Formula, Falsum}
+import org.warthog.generic.formulas.{ Formula, Falsum }
 import org.warthog.pl.formulas.PL
-import org.warthog.pl.datastructures.cnf.{PLLiteral, ImmutablePLClause}
+import org.warthog.pl.datastructures.cnf.{ PLLiteral, ImmutablePLClause }
 import org.warthog.pl.transformations.CNFUtil
 import org.warthog.generic.datastructures.cnf.ClauseLike
+import org.warthog.pl.formulas.PLAtom
 
 /**
  * Common interface for SAT solvers
  */
 trait Solver {
-  
+
   /**
    * Solver name
    */
@@ -89,6 +90,9 @@ trait Solver {
   def sat(): Int
 
   def getModel(): Option[Model]
+
+  def getVarState(variable: PLAtom): Option[Boolean]
+
 }
 
 object Solver {
@@ -96,6 +100,7 @@ object Solver {
   final val UNKNOWN = 0
   final val SAT = 1
   final val UNSAT = -1
+
 }
 
 /**
