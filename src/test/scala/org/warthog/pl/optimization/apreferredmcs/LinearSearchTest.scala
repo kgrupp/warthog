@@ -49,7 +49,7 @@ class LinearSearchTest extends Specification {
     List("src", "test", "resources", "maxsat", "partial", folder, file).mkString(File.separator)
 
   private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[Set[ClauseLike[PL, PLLiteral]]]) {
-    val solver = new LinearSearch(new MiniSatJava())
+    val solver = new LinearSearch(new MiniSatJava(), true)
     val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
     "File " + fileName should {
       "have " + expText in {

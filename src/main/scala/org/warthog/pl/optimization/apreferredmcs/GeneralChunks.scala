@@ -38,11 +38,15 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
  *
  * @author Konstantin Grupp
  */
-class GeneralChunks(satSolver: Solver, k: Int) extends SATBasedAPreferredMCSSolver(satSolver) {
+class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT:Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
 
   def this(satSolver: Solver) = this(satSolver, 10)
 
-  override def name = "GeneralChunks"
+  override def name = {
+    var a = ""
+    if (assumeUNSAT) a = "-assumeUNSAT"
+    "GeneralChunks-"+k+a
+  }
 
   val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
   timeUsed = List(tUsat, tUsatAdd, tUsatDel)
@@ -51,18 +55,14 @@ class GeneralChunks(satSolver: Solver, k: Int) extends SATBasedAPreferredMCSSolv
   var softClausesAry: Array[ClauseLike[PL, PLLiteral]] = Array.empty
 
   override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    if (sat()) {
-      softClausesAry = new Array(softClauses.size)
-      var i = 0
-      softClauses.foreach(y => {
-        softClausesAry(i) = y
-        i += 1
-      })
-      chunksHelper(false, 0, softClauses.size - 1)
-      delta
-    } else {
-      Set()
-    }
+    softClausesAry = new Array(softClauses.size)
+    var i = 0
+    softClauses.foreach(y => {
+      softClausesAry(i) = y
+      i += 1
+    })
+    chunksHelper(1, false, 0, softClauses.size - 1)
+    delta
   }
 
   /**
@@ -72,10 +72,10 @@ class GeneralChunks(satSolver: Solver, k: Int) extends SATBasedAPreferredMCSSolv
    * @param softClauses
    * @param allClauses at start it should be has all soft clauses
    */
-  private def chunksHelper(isRedundant: Boolean, start: Int, end: Int): Boolean = {
+  private def chunksHelper(recursion:Int, isRedundant: Boolean, start: Int, end: Int): Boolean = {
     //println("chunksHelper "+start+" to "+end)
     Thread.sleep(0) // to handle interrupts
-    if (!isRedundant && mySat(start, end)) {
+    if (!isRedundant && (1 < recursion || !(recursion == 1 && assumeUNSAT)) && mySat(start, end)) {
       for (i <- start to end) {
         satSolver.add(softClausesAry(i))
       }
@@ -88,7 +88,7 @@ class GeneralChunks(satSolver: Solver, k: Int) extends SATBasedAPreferredMCSSolv
       var areSubCallsSAT = true
       for (j <- 0 to chunks.size - 1) {
         Thread.sleep(0) // to handle interrupts
-        val isConsistent = chunksHelper(areSubCallsSAT && j == (k - 1), chunks(j)._1, chunks(j)._2)
+        val isConsistent = chunksHelper(recursion + 1, areSubCallsSAT && j == (k - 1), chunks(j)._1, chunks(j)._2)
         areSubCallsSAT &&= isConsistent
       }
       areSubCallsSAT

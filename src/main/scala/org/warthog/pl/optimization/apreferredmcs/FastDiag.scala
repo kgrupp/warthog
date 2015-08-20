@@ -39,21 +39,24 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
  *
  * @author Konstantin Grupp
  */
-class FastDiag(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver) {
+class FastDiag(satSolver: Solver, assumeUNSAT:Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
 
-  override def name = "FastDiag"
+  override def name = {
+    var a = ""
+    if (assumeUNSAT) a = "-assumeUNSAT"
+    "FastDiag"+a
+  }
 
   val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
   timeUsed = List(tUsat, tUsatAdd, tUsatDel)
 
   override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     val softClausesSet = softClauses.toSet
-    if (softClauses.isEmpty || !areHardConstraintsSatisfiable || sat(softClausesSet)) {
+    if (softClauses.isEmpty || (!assumeUNSAT && sat(softClausesSet))) {
       Set()
     } else {
       // reverse the list of soft clauses because FastDiag works that way
-      val gamma = solveAPreferredMCSImplHelper(Set.empty, softClauses.reverse, softClausesSet)
-      gamma
+      solveImplHelper(1, Set.empty, softClauses.reverse, softClausesSet)
     }
   }
 
@@ -64,7 +67,7 @@ class FastDiag(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver)
    * @param softClauses
    * @param allClauses at start it should be has all soft clauses
    */
-  private def solveAPreferredMCSImplHelper(d: Set[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]], allClauses: Set[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+  private def solveImplHelper(recursion:Int, d: Set[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]], allClauses: Set[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     Thread.sleep(0) // to handle interrupts
     if (!d.isEmpty && sat(allClauses)) {
       Set()
@@ -74,9 +77,9 @@ class FastDiag(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver)
       val k: Int = softClauses.size / 2
       val (softClauses1, softClauses2) = softClauses.splitAt(k)
       val diff1 = allClauses.diff(softClauses1.toSet)
-      val d1 = solveAPreferredMCSImplHelper(softClauses1.toSet, softClauses2, diff1)
+      val d1 = solveImplHelper(recursion + 1, softClauses1.toSet, softClauses2, diff1)
       val diff2 = allClauses.diff(d1)
-      val d2 = solveAPreferredMCSImplHelper(d1, softClauses1, diff2)
+      val d2 = solveImplHelper(recursion + 1, d1, softClauses1, diff2)
       val result = d1.union(d2)
       result
     }

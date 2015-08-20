@@ -25,22 +25,25 @@
 
 package org.warthog.pl.optimization.apreferredmcs
 
-import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
-import org.warthog.pl.datastructures.cnf.{ PLLiteral, MutablePLClause, ImmutablePLClause }
-import org.warthog.generic.formulas.Formula
-import org.warthog.pl.formulas.{ PLAtom, PL }
-import org.warthog.pl.optimization.maxsat.MaxSATHelper
-import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
+import org.warthog.generic.datastructures.cnf.ImmutableClause
+import org.warthog.pl.datastructures.cnf.PLLiteral
+import org.warthog.pl.decisionprocedures.satsolver.Solver
+import org.warthog.pl.formulas.PL
+import org.warthog.pl.datastructures.cnf.ImmutablePLClause
 
 /**
  * Linear Search algorithm for A-preferred MCS.
  *
  * @author Konstantin Grupp
  */
-class LinearSearch(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver) {
+class LinearSearch(satSolver: Solver, useBackbone:Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
 
-  override def name = "LinearSearch"
+  override def name = {
+    var b = ""
+    if (useBackbone) b = "-backbone"
+    "LinearSearch"+b
+  }
 
   override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
     var delta: Set[ClauseLike[PL, PLLiteral]] = Set()
@@ -51,6 +54,11 @@ class LinearSearch(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSol
         satSolver.add(clause)
       } else {
         delta += clause
+        if (useBackbone) {
+          for (lit <- clause.literals) {
+            satSolver.add(new ImmutablePLClause(lit.negate))
+          }
+        }
       }
     }
     delta
