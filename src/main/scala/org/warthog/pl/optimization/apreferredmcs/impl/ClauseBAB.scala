@@ -23,37 +23,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.apreferredmcs
+package org.warthog.pl.optimization.apreferredmcs.impl
 
-import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
-import org.warthog.pl.datastructures.cnf.{ PLLiteral, MutablePLClause, ImmutablePLClause }
-import org.warthog.generic.formulas.Formula
-import org.warthog.pl.formulas.{ PLAtom, PL }
-import org.warthog.pl.optimization.maxsat.MaxSATHelper
-import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
+import org.warthog.pl.formulas.PL
+import org.warthog.pl.datastructures.cnf.PLLiteral
+import org.warthog.pl.formulas.PLAtom
+import scala.util.control.Breaks.{break, breakable}
 
 /**
- * Linear Search algorithm for A-preferred MCS.
- *
  * @author Konstantin Grupp
  */
-class LinearSearch(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver) {
-
-  override def name = "LinearSearch"
-
-  override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    var delta: Set[ClauseLike[PL, PLLiteral]] = Set()
-    for (clause <- softClauses) {
-      Thread.sleep(0) // to handle interrupts
-      if (sat(clause)) {
-        // add to gamma, treated as hard clause
-        satSolver.add(clause)
-      } else {
-        delta += clause
+class ClauseBAB(clause:ClauseLike[PL, PLLiteral], assignment:Map[PLAtom, Boolean]) {
+  
+  {
+    var allAssigned = true
+    breakable {
+      for (lit <- clause.literals) {
+        val phaseOpt = assignment.get(lit.variable)
+        if (phaseOpt.isEmpty) {
+          allAssigned = false
+        } else {
+          if (lit.phase == phaseOpt.get) {
+            state = State.TRUE
+            break
+          }
+        }
+      }
+      if (allAssigned) {
+        state = State.FALSE
       }
     }
-    delta
   }
-
+  
+  object State extends Enumeration {
+    type State = Value
+    val TRUE, FALSE, UNDEF = Value 
+  }
+  
+  var state = State.UNDEF
+  
+  def getClause() = clause
+  
+  def isEmpty() = state == State.FALSE
+  def isSatisfied() = state == State.TRUE
+  def isOpen() = state == State.UNDEF
+  
 }

@@ -33,9 +33,9 @@ import org.warthog.pl.datastructures.cnf.PLLiteral
 /**
  * @author Konstantin Grupp
  */
-abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferredMCSMaxSATSolver {
+abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferredMCSSolver {
 
-  override def name = "-" + satSolver.name
+  def satSolverName = satSolver.name
 
   override def reset() {
     super.reset()

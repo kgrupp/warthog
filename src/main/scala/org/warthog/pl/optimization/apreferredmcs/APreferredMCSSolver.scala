@@ -37,7 +37,7 @@ import org.warthog.pl.transformations.CNFUtil
  *
  * @author Konstantin Grupp
  */
-abstract class APreferredMCSMaxSATSolver() {
+abstract class APreferredMCSSolver() {
 
   protected var result: Option[Set[ClauseLike[PL, PLLiteral]]] = None
   protected var model: Option[Model] = None

@@ -42,7 +42,7 @@ class GeneralChunks(satSolver: Solver, k: Int) extends SATBasedAPreferredMCSSolv
 
   def this(satSolver: Solver) = this(satSolver, 10)
 
-  override def name = "GeneralChunks" + super.name
+  override def name = "GeneralChunks"
 
   val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
   timeUsed = List(tUsat, tUsatAdd, tUsatDel)

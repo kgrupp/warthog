@@ -41,7 +41,7 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
  */
 class FastDiag(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver) {
 
-  override def name = "FastDiag" + super.name
+  override def name = "FastDiag"
 
   val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
   timeUsed = List(tUsat, tUsatAdd, tUsatDel)
