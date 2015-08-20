@@ -256,38 +256,6 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
       case None   => None
     }
 
-  def getDimacs() {
-    val softClauses = assumptionClauses.foldRight(Nil: List[ClauseLike[PL, PLLiteral]])((f, r) => f ++ r)
-    var s: String = ""
-    val hardInt = hardClauses.size + softClauses.size + 1
-    val vars = Set[String]()
-    for (clause <- hardClauses) {
-      s += hardInt + " "
-      for (lit <- clause.literals) {
-        vars.+(lit.variable.toString)
-        if (lit.phase) {
-          s += lit.variable + " "
-        } else {
-          s += "-" + lit.variable + " "
-        }
-      }
-      s += "0\n"
-    }
-    for (clause <- softClauses) {
-      s += "1 "
-      for (lit <- clause.literals) {
-        vars.+(lit.variable.toString)
-        if (lit.phase) {
-          s += lit.variable + " "
-        } else {
-          s += "-" + lit.variable + " "
-        }
-      }
-      s += "0\n"
-    }
-    "p wcnf " + hardClauses.size + softClauses.size + " " + vars.size + " " + hardInt + "\n" + s
-  }
-
 }
 
 object MiniSatAssumption {
