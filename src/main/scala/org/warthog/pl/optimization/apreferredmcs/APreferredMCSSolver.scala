@@ -68,11 +68,22 @@ abstract class APreferredMCSSolver() {
 
   def undoHardConstraints()
 
-  def solve(softClauses: List[ClauseLike[PL, PLLiteral]]): Option[List[Int]] = {
+  /**
+   * Calculates the a-preferred MCS for this instance with the given soft clauses.
+   *
+   * @param keepState if true it ensures the state of this instance after calling solve. It uses markHardConstraints/undoHardConstraints
+   */
+  def solve(softClauses: List[ClauseLike[PL, PLLiteral]], keepState: Boolean = false): Option[List[Int]] = {
+    if (keepState) {
+      markHardConstraints()
+    }
     if (!areHardConstraintsSatisfiable())
       result = None
     else
       result = Some(solveImpl(softClauses))
+    if (keepState) {
+      undoHardConstraints()
+    }
     result
   }
 

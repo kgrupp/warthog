@@ -48,9 +48,6 @@ class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT: Boolean = false) ext
     "GeneralChunks-" + k + a
   }
 
-  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
-  timeUsed = List(tUsat, tUsatAdd, tUsatDel)
-
   var delta: List[Int] = List()
   var softClausesAry: Array[ClauseLike[PL, PLLiteral]] = Array.empty
 

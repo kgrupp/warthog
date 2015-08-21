@@ -37,30 +37,45 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
 
   def satSolverName = satSolver.name
 
+  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
+  timeUsed = List(tUsat, tUsatAdd, tUsatDel)
+
   override def reset() {
     super.reset()
     satSolver.reset()
+    clausesStack = Nil
+    marks = Nil
   }
+
+  private var clausesStack: List[ClauseLike[PL, PLLiteral]] = Nil
+  private var marks: List[Int] = Nil
 
   override def addHardConstraint(clause: ClauseLike[PL, PLLiteral]) {
     satSolver.add(clause)
+    clausesStack = (clause :: clausesStack)
   }
 
   override def markHardConstraints() {
-    satSolver.mark()
-    // TODO implement a version which does not kill performance
+    marks = clausesStack.length :: marks
   }
 
   override def undoHardConstraints() {
-    satSolver.undo()
-    // TODO implement a version which does not kill performance
+    marks match {
+      case h :: t => {
+        marks = t
+        satSolver.reset
+        clausesStack = clausesStack.drop(clausesStack.length - h)
+        clausesStack.foreach(satSolver.add)
+      }
+      case _ => // No mark, then ignore undo
+    }
   }
 
   override protected def areHardConstraintsSatisfiable() = sat()
-  // TODO implement a version which works after calling solve once
 
   protected def sat(clauses: Traversable[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
-    satSolver.mark()
+    tUsatAdd.start
+    satSolver.mark
     var j = 0
     for (c <- clauses) {
       if (100 < j) {
@@ -70,16 +85,27 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
       satSolver.add(c)
       j += 1
     }
+    tUsatAdd.end
+    tUsat.start
     val isSAT = satSolver.sat() == Solver.SAT
-    satSolver.undo()
+    tUsat.end
+    tUsatDel.start
+    satSolver.undo
+    tUsatDel.end
     isSAT
   }
 
   protected def sat(clause: ClauseLike[PL, PLLiteral]): Boolean = {
-    satSolver.mark()
+    tUsatAdd.start
+    satSolver.mark
     satSolver.add(clause)
+    tUsatAdd.end
+    tUsat.start
     val isSAT = satSolver.sat() == Solver.SAT
-    satSolver.undo()
+    tUsat.end
+    tUsat.start
+    satSolver.undo
+    tUsat.end
     isSAT
   }
 

@@ -172,7 +172,6 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
   }
 
   override def mark() {
-    val newHead = List()
     assumptionClauses = List() :: assumptionClauses
     assumptionClausesChecker = Map[ClauseLike[PL, PLLiteral], Boolean]() :: assumptionClausesChecker
   }

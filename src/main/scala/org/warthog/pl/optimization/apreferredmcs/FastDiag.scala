@@ -50,13 +50,10 @@ class FastDiag(satSolver: Solver, assumeUNSAT: Boolean = false) extends SATBased
   
   var softClausesAry = Array[ClauseLike[PL, PLLiteral]]()
 
-  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
-  timeUsed = List(tUsat, tUsatAdd, tUsatDel)
-
   override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]) = {
     softClausesAry = softClauses.toArray
     val softClausesInt = (0 to softClauses.size-1).toList
-    if (softClauses.isEmpty || (!assumeUNSAT && sat(softClauses))) {
+    if (softClauses.isEmpty || (!assumeUNSAT && mySat(softClausesInt))) {
       List()
     } else {
       solveImplHelper(1, true, softClausesInt)
