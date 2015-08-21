@@ -59,7 +59,7 @@ class FastDiag(satSolver: Solver, assumeUNSAT: Boolean = false) extends SATBased
     if (softClauses.isEmpty || (!assumeUNSAT && sat(softClauses))) {
       List()
     } else {
-      solveImplHelper(1, true, softClausesInt, softClausesInt)
+      solveImplHelper(1, true, softClausesInt)
     }
   }
 
@@ -70,52 +70,22 @@ class FastDiag(satSolver: Solver, assumeUNSAT: Boolean = false) extends SATBased
    * @param softClauses
    * @param allClauses at start it should be has all soft clauses
    */
-  private def solveImplHelper(recursion: Int, isRedundant: Boolean, softClauses: List[Int], allClauses: List[Int]): List[Int] = {
+  private def solveImplHelper(recursion: Int, isRedundant: Boolean, softClauses: List[Int]): List[Int] = {
     Thread.sleep(0) // to handle interrupts
-    if (!isRedundant && mySat(allClauses)) {
+    if (!isRedundant && mySat(softClauses)) {
+      for (cInt <- softClauses) {
+        satSolver.add(softClausesAry(cInt))
+      }
       List()
     } else if (softClauses.size == 1) {
       softClauses
     } else {
       val k: Int = softClauses.size / 2
       val (softClauses1, softClauses2) = softClauses.splitAt(k)
-      val d1 = solveImplHelper(recursion + 1, softClauses2.isEmpty, softClauses1, myDiff(allClauses,softClauses2))
-      val d2 = solveImplHelper(recursion + 1, d1.isEmpty, softClauses2, myDiff(allClauses, d1))
+      val d1 = solveImplHelper(recursion + 1, softClauses2.isEmpty, softClauses1)
+      val d2 = solveImplHelper(recursion + 1, d1.isEmpty, softClauses2)
       d1 ++ d2
     }
-  }
-  
-  private def myDiff(lis1: List[Int], diffLis: List[Int]):List[Int] = {
-    if (diffLis.isEmpty || lis1.isEmpty) {
-      return lis1
-    }
-    var result:List[Int] = List()
-    
-    val iterator = lis1.iterator
-    val iteratorDiff = diffLis.iterator
-    var diff = iteratorDiff.next
-    breakable {
-      while (true) {
-        if (!iterator.hasNext) {
-          break
-        }
-        var current = iterator.next
-        if (current == diff) {
-          // not add 'current' to 'result'
-          if (iteratorDiff.hasNext) {
-            diff = iteratorDiff.next
-          } else {
-            break
-          }
-        } else {
-          result = current :: result
-        }
-      }
-    }
-    while (iterator.hasNext) {
-      result = iterator.next :: result
-    }
-    result.reverse
   }
 
   private def mySat(clausesInt: List[Int] = List.empty): Boolean = {

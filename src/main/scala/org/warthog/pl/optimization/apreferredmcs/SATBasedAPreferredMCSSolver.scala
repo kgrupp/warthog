@@ -61,8 +61,15 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
 
   protected def sat(clauses: Traversable[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
     satSolver.mark()
-    for (c <- clauses)
+    var j = 0
+    for (c <- clauses) {
+      if (100 < j) {
+        Thread.sleep(0) // to handle interrupts
+        j = 0
+      }
       satSolver.add(c)
+      j += 1
+    }
     val isSAT = satSolver.sat() == Solver.SAT
     satSolver.undo()
     isSAT

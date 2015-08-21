@@ -61,7 +61,7 @@ class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT: Boolean = false) ext
       softClausesAry(i) = y
       i += 1
     })
-    chunksHelper(1, false, 0, softClauses.size - 1)
+    chunksHelper(1, assumeUNSAT, 0, softClauses.size - 1)
     delta.reverse
   }
 
@@ -75,7 +75,7 @@ class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT: Boolean = false) ext
   private def chunksHelper(recursion: Int, isRedundant: Boolean, start: Int, end: Int): Boolean = {
     //println("chunksHelper "+start+" to "+end)
     Thread.sleep(0) // to handle interrupts
-    if (!isRedundant && (1 < recursion || !(recursion == 1 && assumeUNSAT)) && mySat(start, end)) {
+    if (!isRedundant && mySat(start, end)) {
       for (i <- start to end) {
         satSolver.add(softClausesAry(i))
       }
