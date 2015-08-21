@@ -59,7 +59,7 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
   override protected def areHardConstraintsSatisfiable() = sat()
   // TODO implement a version which works after calling solve once
 
-  protected def sat(clauses: Set[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
+  protected def sat(clauses: Traversable[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
     satSolver.mark()
     for (c <- clauses)
       satSolver.add(c)

@@ -46,56 +46,50 @@ class GeneralChunksTest extends Specification {
   private def getFileString(folder: String, file: String) =
     List("src", "test", "resources", "maxsat", "partial", folder, file).mkString(File.separator)
 
-  private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[Set[ClauseLike[PL, PLLiteral]]]) {
-    val solver = new GeneralChunks(new MiniSatJava(), 4)
-    val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
-    "File " + fileName should {
-      "have " + expText in {
-        val reader = new PartialWeightedMaxSATReader()
-        reader.read(getFileString(subFolder, fileName))
+  private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[List[Int]], useAssumeUNSAT: Boolean = true) {
+    val solverLis = List(new GeneralChunks(new MiniSatJava(), 4), new GeneralChunks(new MiniSatJava(), 4, useAssumeUNSAT))
+    for (solver <- solverLis) {
+      val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
+      "File " + fileName + " with " + solver.name should {
+        "have " + expText in {
+          val reader = new PartialWeightedMaxSATReader()
+          reader.read(getFileString(subFolder, fileName))
 
-        solver.reset()
-        solver.addHardConstraint(reader.hardClauses)
-        val result = solver.solve(reader.softClauses.toList)
+          solver.reset()
+          solver.addHardConstraint(reader.hardClauses)
+          val result = solver.solve(reader.softClauses.toList)
 
-        result must be equalTo expResult
+          result must be equalTo expResult
+        }
       }
     }
   }
 
-  val (v1, v2, v3, v4, v5, v6) = (PLLiteral("1", true), PLLiteral("2", true), PLLiteral("3", true), PLLiteral("4", true), PLLiteral("5", true), PLLiteral("6", true))
-  val (v1f, v2f, v3f, v4f, v5f, v6f) = (PLLiteral("1", false), PLLiteral("2", false), PLLiteral("3", false), PLLiteral("4", false), PLLiteral("5", false), PLLiteral("6", false))
-  val (v7f, v8f, v9f, v10f, v11f, v12f) = (PLLiteral("7", false), PLLiteral("8", false), PLLiteral("9", false), PLLiteral("10", false), PLLiteral("11", false), PLLiteral("12", false))
-  val (v13f, v14f, v15f, v16f, v17f, v18f) = (PLLiteral("13", false), PLLiteral("14", false), PLLiteral("15", false), PLLiteral("16", false), PLLiteral("17", false), PLLiteral("18", false))
-
   testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None)
 
-  testWCNFDIMACSFile("simple", "f01.wcnf", Some(Set()))
-  testWCNFDIMACSFile("simple", "f02.wcnf", Some(Set()))
-  testWCNFDIMACSFile("simple", "f03.wcnf", Some(Set(new Clause(v1f, v2f, v3))))
-  testWCNFDIMACSFile("simple", "f04.wcnf", Some(Set(new Clause(v5, v6))))
-  testWCNFDIMACSFile("simple", "f05.wcnf", Some(Set(new Clause(v1f))))
+  testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()))
+  testWCNFDIMACSFile("simple", "f02.wcnf", Some(List()))
+  testWCNFDIMACSFile("simple", "f03.wcnf", Some(List(5)))
+  testWCNFDIMACSFile("simple", "f04.wcnf", Some(List(10)))
+  testWCNFDIMACSFile("simple", "f05.wcnf", Some(List(6)))
 
-  testWCNFDIMACSFile("simple", "f06.wcnf", Some(Set(new Clause(v2, v3))))
-  testWCNFDIMACSFile("simple", "f07.wcnf", Some(Set(new Clause(v2, v3), new Clause(v1f))))
-  testWCNFDIMACSFile("simple", "f08.wcnf", Some(Set(new Clause(v5f), new Clause(v4f), new Clause(v2f), new Clause(v1f), new Clause(v3f))))
+  testWCNFDIMACSFile("simple", "f06.wcnf", Some(List(2)))
+  testWCNFDIMACSFile("simple", "f07.wcnf", Some(List(0, 2)))
+  testWCNFDIMACSFile("simple", "f08.wcnf", Some(List(0, 1, 2, 3, 4)))
   testWCNFDIMACSFile("simple", "f09.wcnf", None)
   testWCNFDIMACSFile("simple", "f10.wcnf", None)
 
-  testWCNFDIMACSFile("simple", "f11.wcnf", Some(Set(new Clause(v1f, v2f), new Clause(v2f, v3f))))
+  testWCNFDIMACSFile("simple", "f11.wcnf", Some(List(0, 2)))
 
-  testWCNFDIMACSFile("simple", "oneClauseFormulaSoft.wcnf", Some(Set()))
-  testWCNFDIMACSFile("simple", "oneClauseFormulaHard.wcnf", Some(Set()))
-  testWCNFDIMACSFile("simple", "oneEmptyClauseSoft.wcnf", Some(Set(new Clause())))
+  testWCNFDIMACSFile("simple", "oneClauseFormulaSoft.wcnf", Some(List()), false)
+  testWCNFDIMACSFile("simple", "oneClauseFormulaHard.wcnf", Some(List()))
+  testWCNFDIMACSFile("simple", "oneEmptyClauseSoft.wcnf", Some(List(0)))
   testWCNFDIMACSFile("simple", "oneEmptyClauseHard.wcnf", None)
-  testWCNFDIMACSFile("simple", "oneVariableFormula.wcnf", Some(Set()))
-  testWCNFDIMACSFile("simple", "oneVariableOneClauseFormulaSoft.wcnf", Some(Set()))
-  testWCNFDIMACSFile("simple", "oneVariableOneClauseFormulaHard.wcnf", Some(Set()))
+  testWCNFDIMACSFile("simple", "oneVariableFormula.wcnf", Some(List()))
+  testWCNFDIMACSFile("simple", "oneVariableOneClauseFormulaSoft.wcnf", Some(List()), false)
+  testWCNFDIMACSFile("simple", "oneVariableOneClauseFormulaHard.wcnf", Some(List()))
   testWCNFDIMACSFile("simple", "threeEmptyClauses.wcnf", None)
 
-  testWCNFDIMACSFile("randomVertexCover", "edges00040_vertices00010.wcnf", Some(Set(new Clause(v1f), new Clause(v2f),
-    new Clause(v3f), new Clause(v4f), new Clause(v5f), new Clause(v7f), new Clause(v9f), new Clause(v10f))))
-  testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(Set(new Clause(v1f), new Clause(v2f),
-    new Clause(v3f), new Clause(v4f), new Clause(v5f), new Clause(v6f), new Clause(v7f), new Clause(v8f), new Clause(v10f), new Clause(v11f),
-    new Clause(v12f), new Clause(v13f), new Clause(v14f), new Clause(v15f), new Clause(v16f), new Clause(v17f), new Clause(v18f))))
+  testWCNFDIMACSFile("randomVertexCover", "edges00040_vertices00010.wcnf", Some(List(0, 1, 3, 5, 6, 7, 8, 9)))
+  testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
 }

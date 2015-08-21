@@ -37,31 +37,33 @@ import org.warthog.pl.datastructures.cnf.ImmutablePLClause
  *
  * @author Konstantin Grupp
  */
-class LinearSearch(satSolver: Solver, useBackbone:Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
+class LinearSearch(satSolver: Solver, useBackbone: Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
 
   override def name = {
     var b = ""
     if (useBackbone) b = "-backbone"
-    "LinearSearch"+b
+    "LinearSearch" + b
   }
 
-  override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
-    var delta: Set[ClauseLike[PL, PLLiteral]] = Set()
+  override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]) = {
+    var delta: List[Int] = List()
+    var i = 0
     for (clause <- softClauses) {
       Thread.sleep(0) // to handle interrupts
       if (sat(clause)) {
         // add to gamma, treated as hard clause
         satSolver.add(clause)
       } else {
-        delta += clause
+        delta = i :: delta
         if (useBackbone) {
           for (lit <- clause.literals) {
             satSolver.add(new ImmutablePLClause(lit.negate))
           }
         }
       }
+      i += 1
     }
-    delta
+    delta.reverse
   }
 
 }

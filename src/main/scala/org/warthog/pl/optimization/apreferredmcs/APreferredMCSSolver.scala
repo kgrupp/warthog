@@ -39,7 +39,7 @@ import org.warthog.pl.transformations.CNFUtil
  */
 abstract class APreferredMCSSolver() {
 
-  protected var result: Option[Set[ClauseLike[PL, PLLiteral]]] = None
+  protected var result: Option[List[Int]] = None
   protected var model: Option[Model] = None
 
   def name: String
@@ -68,7 +68,7 @@ abstract class APreferredMCSSolver() {
 
   def undoHardConstraints()
 
-  def solve(softClauses: List[ClauseLike[PL, PLLiteral]]): Option[Set[ClauseLike[PL, PLLiteral]]] = {
+  def solve(softClauses: List[ClauseLike[PL, PLLiteral]]): Option[List[Int]] = {
     if (!areHardConstraintsSatisfiable())
       result = None
     else
@@ -86,7 +86,7 @@ abstract class APreferredMCSSolver() {
    * @param softClauses in the L-Preferred order
    * @return
    */
-  protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]]
+  protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): List[Int]
 
   protected def areHardConstraintsSatisfiable(): Boolean
 

@@ -38,23 +38,23 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
  *
  * @author Konstantin Grupp
  */
-class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT:Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
+class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT: Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
 
   def this(satSolver: Solver) = this(satSolver, 10)
 
   override def name = {
     var a = ""
     if (assumeUNSAT) a = "-assumeUNSAT"
-    "GeneralChunks-"+k+a
+    "GeneralChunks-" + k + a
   }
 
   val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
   timeUsed = List(tUsat, tUsatAdd, tUsatDel)
 
-  var delta: Set[ClauseLike[PL, PLLiteral]] = Set.empty
+  var delta: List[Int] = List()
   var softClausesAry: Array[ClauseLike[PL, PLLiteral]] = Array.empty
 
-  override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): Set[ClauseLike[PL, PLLiteral]] = {
+  override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]) = {
     softClausesAry = new Array(softClauses.size)
     var i = 0
     softClauses.foreach(y => {
@@ -62,7 +62,7 @@ class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT:Boolean = false) exte
       i += 1
     })
     chunksHelper(1, false, 0, softClauses.size - 1)
-    delta
+    delta.reverse
   }
 
   /**
@@ -72,7 +72,7 @@ class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT:Boolean = false) exte
    * @param softClauses
    * @param allClauses at start it should be has all soft clauses
    */
-  private def chunksHelper(recursion:Int, isRedundant: Boolean, start: Int, end: Int): Boolean = {
+  private def chunksHelper(recursion: Int, isRedundant: Boolean, start: Int, end: Int): Boolean = {
     //println("chunksHelper "+start+" to "+end)
     Thread.sleep(0) // to handle interrupts
     if (!isRedundant && (1 < recursion || !(recursion == 1 && assumeUNSAT)) && mySat(start, end)) {
@@ -81,7 +81,7 @@ class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT:Boolean = false) exte
       }
       true
     } else if (end == start) {
-      delta += softClausesAry(start)
+      delta = start :: delta
       false
     } else {
       val chunks = calcPartition(start, end)

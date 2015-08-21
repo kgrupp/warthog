@@ -36,7 +36,7 @@ class WeightedDIMACSPrinter {
 
   /**
    * Returns a string in weighted DIMACS format.
-   * 
+   *
    * Note: Works only correct, if variable names are represented by integers
    */
   def print(hardClauses: List[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]]): String = {
