@@ -23,53 +23,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.apreferredmcs.impl
-
-import org.warthog.generic.datastructures.cnf.ClauseLike
-import org.warthog.pl.formulas.PL
-import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.formulas.PLAtom
-import scala.util.control.Breaks.{ break, breakable }
-import collection.{ Map => SuperMap}
-import collection.mutable.{ Map => MutableMap }
+package org.warthog.pl.optimization.apreferredmcs.impl;
 
 /**
  * @author Konstantin Grupp
  */
-class ClauseBAB(isHard: Boolean, id: Int, orginalClause: ClauseLike[PL, PLLiteral], workingClause: Array[Int]) {
+public enum VarState {
 
-  var watcher1 = 0
-  var watcher2 = 1
+	TRUE, FALSE, UNDEF;
 
-  // TODO
-
-  def isSatisfied(assignment: SuperMap[PLAtom, Boolean]) = {
-    var clauseIsTrue = false
-    for (lit <- orginalClause.literals) {
-      val phaseOpt = assignment.get(lit.variable)
-      var phase = false
-      if (!phaseOpt.isEmpty) {
-        phase = phaseOpt.get
-      }
-
-      if (phase == lit.phase) {
-        clauseIsTrue = true
-      }
-    }
-    clauseIsTrue
-  }
-  
-  def isEmpty() = {
-    // TODO 
-    true
-  }
-  
-  def get(id: Int) = workingClause(id)
-  def set(id: Int, lit: Int) = workingClause(id) = lit
-  
-  def lit() = workingClause(0)
-  
-  def size() = workingClause.length
-  def isLit() = workingClause.length == 1
-
+	public static VarState fromBool(Boolean b) {
+		return (b ? TRUE : FALSE);
+	}
+	
+	public VarState negate() {
+		return this == FALSE ? TRUE : (this == TRUE ? FALSE : UNDEF);
+	}
+	
 }
