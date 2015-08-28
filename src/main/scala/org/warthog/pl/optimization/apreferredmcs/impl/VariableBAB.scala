@@ -31,24 +31,27 @@ import org.warthog.pl.formulas.PLAtom
  * @author Konstantin Grupp
  */
 class VariableBAB(orginalVariable: PLAtom, id: Int) {
-  
+
   private var decisionLevel = -1
   private var varState = VarState.UNDEF
   private var polarity = false
-  
+
   def getID(): Int = id
 
   def assign(state: VarState) {
     varState = state
     // TODO
   }
-  
+
   def setLevel(level: Int) {
     decisionLevel = level
   }
-  
+
   def assignment() = varState
-  
+
   def getPolarity(): Boolean = polarity
+
+  override def toString() =
+    "Var { id: " + id + ", orginal: " + orginalVariable + ", level: " + decisionLevel + ", varState: " + varState.toString + "}"
 
 }

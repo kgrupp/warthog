@@ -43,20 +43,20 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
   override def reset() {
     super.reset()
     satSolver.reset()
-    clausesStack = Nil
+    hardClauses = Nil
     marks = Nil
   }
 
-  private var clausesStack: List[ClauseLike[PL, PLLiteral]] = Nil
+  protected var hardClauses: List[ClauseLike[PL, PLLiteral]] = Nil
   private var marks: List[Int] = Nil
 
   override def addHardConstraint(clause: ClauseLike[PL, PLLiteral]) {
     satSolver.add(clause)
-    clausesStack = (clause :: clausesStack)
+    hardClauses = (clause :: hardClauses)
   }
 
   override def markHardConstraints() {
-    marks = clausesStack.length :: marks
+    marks = hardClauses.length :: marks
   }
 
   override def undoHardConstraints() {
@@ -64,8 +64,8 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
       case h :: t => {
         marks = t
         satSolver.reset
-        clausesStack = clausesStack.drop(clausesStack.length - h)
-        clausesStack.foreach(satSolver.add)
+        hardClauses = hardClauses.drop(hardClauses.length - h)
+        hardClauses.foreach(satSolver.add)
       }
       case _ => // No mark, then ignore undo
     }
