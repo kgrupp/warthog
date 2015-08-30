@@ -92,7 +92,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
                                     softClausesEmpty: Vec[Int],
                                     upperBound: Vec[Int],
                                     varStack: List[VariableBAB]): Vec[Int] = {
-    myPrintln("adoptedBranchAndBound:\n" + hardClauses + "\n" + hardClausesEmpty + "\n" + softClauses + "\n" + softClausesEmpty + "\n" + upperBound + "\n" + varStack)
+    myPrintln("adoptedBranchAndBound:\n\t\t" + hardClauses + "\n\t\t" + hardClausesEmpty + "\n\t\t" + softClauses + "\n\t\t" + softClausesEmpty + "\n\t\t" + upperBound + "\n\t\t" + varStack)
     val (hardClausesSimp, hardClausesSimpEmpty, softClausesSimp, softClausesSimpEmpty) = simplify(hardClauses, hardClausesEmpty, softClauses, softClausesEmpty)
 
     if (!hardClausesSimpEmpty.isEmpty) {
@@ -107,22 +107,22 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       return upperBound
     }
     val (x, newVarStack) = pickNextVar(varStack)
+    myPrintln("newAssumptionVar: " + x + " on decisionLevel " + decisionLevel)
+    myPrintln(varStack.toString)
     if (x == -1) {
       throw new AssertionError("TODO need to assign new var, but already all are set")
     }
-    myPrintln("newAssumptionVar: " + x + " on decisionLevel " + decisionLevel)
-    myPrintln(varStack.toString)
     val currentLevel = decisionLevel
     if (!assume(BABUtil.mkLit(x, false))) {
       return throw new AssertionError("already assigned other way")
     }
-    val resultPos = adoptedBranchAndBound(hardClausesSimp, emptyVecInt, softClausesSimp, emptyVecInt, upperBound, newVarStack)
+    val resultPos = adoptedBranchAndBound(hardClausesSimp, hardClausesSimpEmpty, softClausesSimp, softClausesSimpEmpty, upperBound, newVarStack)
     cancelUntil(currentLevel)
     if (!assume(BABUtil.mkLit(x, true))) {
       return throw new AssertionError("already assigned other way")
     }
-    val resultNeg = adoptedBranchAndBound(hardClausesSimp, emptyVecInt, softClausesSimp, emptyVecInt, upperBound, newVarStack)
-    myPrintln("bounds:\n"+resultPos+"\n"+resultNeg+"\n"+upperBound)
+    val resultNeg = adoptedBranchAndBound(hardClausesSimp, hardClausesSimpEmpty, softClausesSimp, softClausesSimpEmpty, upperBound, newVarStack)
+    myPrintln("bounds:\n\t\t" + resultPos + "\n\t\t" + resultNeg + "\n\t\t" + upperBound)
     if (antilex(resultPos, upperBound)) {
       return resultPos
     } else if (antilex(resultNeg, upperBound)) {
@@ -130,6 +130,11 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     } else {
       return upperBound
     }
+  }
+  
+  private def remainingAre(clauses: Vec[Int]) = {
+    
+    
   }
 
   /**
@@ -159,14 +164,13 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
         myPrintln("simplify: watchers " + i + " < " + watchers.size + " clause: " + watchers.get(i))
         if (watchers.get(i).isLit()) {
           val unitClause = watchers.get(i)
-          if (!assign(unitClause.lit())) {
-            // clause empty
-            if (unitClause.isHard) {
+          if (unitClause.isHard()) {
+            if (!assign(unitClause.lit())) {
+              // clause empty
+              myPrintln("found hard empty clause: " + unitClause)
               emptyNewHard = unitClause.getID :: emptyNewHard
-            } else {
-              emptyNewSoft = unitClause.getID :: emptyNewSoft
-            }
-            /*if (decisionLevel() == 0) {
+              // TODO break because hard clauses are not satisfied
+              /*if (decisionLevel() == 0) {
               ok = false
             }
             confl = new MSJClause(2);
@@ -178,15 +182,22 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
               j += 1
               i += 1
             }*/
-          } else {
-            if (unitClause.isHard) {
-              satNewHard = unitClause.getID :: satNewHard
             } else {
-              satNewSoft = unitClause.getID :: satNewSoft
+              myPrintln("found hard sat clause: " + unitClause)
+              satNewHard = unitClause.getID :: satNewHard
+              watchers.set(j, watchers.get(i))
+              j += 1
+              i += 1
             }
-            watchers.set(j, watchers.get(i))
-            j += 1
-            i += 1
+          } else { // is softclause
+            // TODO
+            if (value(unitClause.lit()) == VarState.TRUE) {
+              myPrintln("found soft sat clause: " + unitClause)
+              satNewSoft = unitClause.getID :: satNewSoft
+            } else if (value(unitClause.lit()) == VarState.FALSE) {
+              myPrintln("found soft empty clause: " + unitClause)
+              emptyNewSoft = unitClause.getID :: emptyNewSoft
+            }
           }
         } else { // watched clause has more than one literal
           val c = watchers.get(i)
@@ -202,8 +213,10 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
           if (value(first) == VarState.TRUE) {
             // clause is satisfied
             if (c.isHard()) {
+              myPrintln("found hard sat clause: " + c)
               satNewHard = c.getID :: satNewHard
             } else {
+              myPrintln("found soft sat clause: " + c)
               satNewSoft = c.getID :: satNewSoft
             }
             watchers.set(j, c)
@@ -226,14 +239,13 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
             if (!foundWatch) {
               watchers.set(j, c)
               j += 1
-              if (!assign(first)) {
-                // empty clause
-                if (c.isHard) {
+              if (c.isHard()) {
+                if (!assign(first)) {
+                  // empty clause
+                  myPrintln("found hard empty clause: " + c)
                   emptyNewHard = c.getID :: emptyNewHard
-                } else {
-                  emptyNewSoft = c.getID :: emptyNewSoft
-                }
-                /*if (decisionLevel() == 0) {
+                  // TODO break because hard clauses are not satisfied
+                  /*if (decisionLevel() == 0) {
                   ok = false
                 }
                 confl = c
@@ -243,6 +255,12 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
                   j += 1
                   i += 1
                 }*/
+                }
+              } else { // is soft clause
+                if (value(first) == VarState.FALSE) {
+                  myPrintln("found soft empty clause: " + c)
+                  emptyNewSoft = c.getID :: emptyNewSoft
+                }
               }
             } // found new watch -> not empty but still false
           }
@@ -251,12 +269,13 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       watchers.shrink(i - j)
     }
     // combine old result with newer information
-    myPrintln("simplify (changed clauses):\n" + satNewHard + "\n" + emptyNewHard + "\n" + satNewSoft + "\n" + emptyNewSoft)
+    myPrintln("simplify (changed clauses):\n\t\t" + satNewHard + "\n\t\t" + emptyNewHard + "\n\t\t" + satNewSoft + "\n\t\t" + emptyNewSoft)
     val (resultHard, resultHardEmpty) = combineVecs(hardClauses, hardClausesEmpty, satNewHard, emptyNewHard)
     val (resultSoft, resultSoftEmpty) = combineVecs(softClauses, softClausesEmpty, satNewSoft, emptyNewSoft)
-    myPrintln("simplify (result):\n" + resultHard + "\n" + resultHardEmpty + "\n" + resultSoft + "\n" + resultSoftEmpty)
-    for (i <- 0 to resultSoft.size-1) {
-      myPrintln("softClause not satisfied: "+softClausesArySim(resultSoft.get(i)))
+    myPrintln("simplify (result):\n\t\t" + resultHard + "\n\t\t" + resultHardEmpty + "\n\t\t" + resultSoft + "\n\t\t" + resultSoftEmpty)
+    myPrintln("current states: " + vars)
+    for (i <- 0 to resultSoft.size - 1) {
+      myPrintln("softClause not satisfied: " + softClausesArySim(resultSoft.get(i)))
     }
     (resultHard, resultHardEmpty, resultSoft, resultSoftEmpty)
   }
@@ -264,34 +283,42 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
   private def combineVecs(clauses: Vec[Int], clausesEmpty: Vec[Int], satNew: List[Int], emptyNew: List[Int]): (Vec[Int], Vec[Int]) = {
     // sort satNew and emptyNew because they may be not in order to do a combination in linear time
     var clID = 0
-    var itNewSat = satNew.sortWith(_ < _).distinct.iterator // TODO efficient duplicate elimination
-    var clNewSat = -1
+    val satNewSorted = satNew.sortWith(_ < _).distinct // TODO efficient duplicate elimination
+    var itNewSat = satNewSorted.iterator
+    var clNewSat = Integer.MAX_VALUE
     if (itNewSat.hasNext) {
       clNewSat = itNewSat.next
     }
     val emptyNewSorted = emptyNew.sortWith(_ < _).distinct // TODO efficient duplicate elimination
     var itNewEm = emptyNewSorted.iterator
-    var clNewEm = -1
+    var clNewEm = Integer.MAX_VALUE
     if (itNewEm.hasNext) {
       clNewEm = itNewEm.next
     }
 
     // calc result for clauses which are false
-    val result = new Vec[Int](clauses.size - satNew.size - emptyNew.size)
+    var resultSize = clauses.size - satNewSorted.size - emptyNewSorted.size
+    if (resultSize < 5) resultSize = 5
+    val result = new Vec[Int](resultSize)
     while (clID < clauses.size) {
       val currentCl = clauses.get(clID)
-      if (currentCl == clNewSat) {
+      if (clNewSat <= currentCl) {
+        // we need here <= because an element could be added to new sat which is already deleted from softClauses
         if (itNewSat.hasNext) {
           clNewSat = itNewSat.next
         } else {
-          clNewSat = -1
+          clNewSat = Integer.MAX_VALUE
         }
-      } else if (currentCl == clNewEm) {
+        if (clNewSat == currentCl) {
+          clID += 1
+        }
+      } else if (clNewEm == currentCl) {
         if (itNewEm.hasNext) {
           clNewEm = itNewEm.next
         } else {
-          clNewEm = -1
+          clNewEm = Integer.MAX_VALUE
         }
+        clID += 1
       } else {
         val currentClause = softClausesArySim(currentCl)
         if (value(currentClause.get(0)) == VarState.TRUE) {
@@ -299,36 +326,36 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
         } else {
           result.push(currentCl)
         }
+        clID += 1
       }
-      clID += 1
     }
 
     // calc result for empty Clauses
-    val resultEmpty = new Vec[Int](clausesEmpty.size + emptyNew.size)
+    val resultEmpty = new Vec[Int](clausesEmpty.size + emptyNewSorted.size)
     var clEmID = 0
     itNewEm = emptyNewSorted.iterator
-    clNewEm = -1
+    clNewEm = Integer.MAX_VALUE
     if (itNewEm.hasNext) {
       clNewEm = itNewEm.next
     }
     while (clEmID < clausesEmpty.size) {
       val currentCl = clauses.get(clEmID)
-      if (currentCl == clNewEm) {
+      if (clNewEm == currentCl) {
         if (itNewEm.hasNext) {
           clNewEm = itNewEm.next
         } else {
-          clNewEm = -1
+          clNewEm = Integer.MAX_VALUE
         }
-        resultEmpty.push(currentCl)
+          resultEmpty.push(currentCl)
       }
       clEmID += 1
     }
-    while (clNewEm != -1) {
+    while (clNewEm != Integer.MAX_VALUE) {
       resultEmpty.push(clNewEm)
       if (itNewEm.hasNext) {
         clNewEm = itNewEm.next
       } else {
-        clNewEm = -1
+        clNewEm = Integer.MAX_VALUE
       }
     }
     (result, resultEmpty)
@@ -352,9 +379,10 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
    * Checks whether the current lower bound is not preferred to the upper bound
    */
   private def antilex(lis1: Vec[Int], lis2: Vec[Int]): Boolean = {
+    myPrintln("antilex: " + lis1 + " < " + lis2)
     if (lis1.isEmpty) {
       return true
-    } else if (lis2.isEmpty()) {
+    } else if (lis2.isEmpty) {
       return false
     }
     val itLis1 = lis1.iterator
@@ -518,11 +546,13 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
    * Similar to pickBranchLit
    */
   private def pickNextVar(varStack: List[VariableBAB]): (Int, List[VariableBAB]) = {
-    while (!varStack.isEmpty) {
-      val next = varStack.head
+    var temp = varStack
+    while (!temp.isEmpty) {
+      val next = temp.head
       if (next.assignment() == VarState.UNDEF) {
-        return (next.getID, varStack.tail)
+        return (next.getID, temp.tail)
       }
+      temp = temp.tail
     }
     return (-1, List())
   }
@@ -539,7 +569,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
 
   private def value(lit: Int) = {
     val variable = getVar(lit)
-    if (BABUtil.sign(lit)) {
+    if (BABUtil.sign(lit)) { // if literal negated
       variable.assignment.negate
     } else {
       variable.assignment

@@ -65,15 +65,15 @@ class AdoptedBranchAndBoundTest extends Specification {
     }
   }
 
-  //testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None) // works
+  /*testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None) // works
 
-  //testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()), false) // works
-  testWCNFDIMACSFile("simple", "f02.wcnf", Some(List()), false) // endless loop
-  /*testWCNFDIMACSFile("simple", "f03.wcnf", Some(List(5))) // works
+  testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()), false) // works
+  testWCNFDIMACSFile("simple", "f02.wcnf", Some(List()), false) // works
+  testWCNFDIMACSFile("simple", "f03.wcnf", Some(List(5))) // works*/
   testWCNFDIMACSFile("simple", "f04.wcnf", Some(List(10)))
-  testWCNFDIMACSFile("simple", "f05.wcnf", Some(List(6)))
+  //testWCNFDIMACSFile("simple", "f05.wcnf", Some(List(6)))
 
-  testWCNFDIMACSFile("simple", "f06.wcnf", Some(List(2)))
+  /*testWCNFDIMACSFile("simple", "f06.wcnf", Some(List(2)))
   testWCNFDIMACSFile("simple", "f07.wcnf", Some(List(0, 2)))
   testWCNFDIMACSFile("simple", "f08.wcnf", Some(List(0, 1, 2, 3, 4)))
   testWCNFDIMACSFile("simple", "f09.wcnf", None)
