@@ -68,6 +68,7 @@ class LinearSearchTest extends Specification {
   }
 
   testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 7)
   testWCNFDIMACSFile2("simple", "testingMinisatRework1.wcnf", 1)
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
     val solver = new LinearSearch(new MiniSatAssumption())

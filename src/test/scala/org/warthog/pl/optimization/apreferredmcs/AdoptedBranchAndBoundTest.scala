@@ -65,15 +65,15 @@ class AdoptedBranchAndBoundTest extends Specification {
     }
   }
 
-  /*testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None) // works
+  testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None)
 
-  testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()), false) // works
-  testWCNFDIMACSFile("simple", "f02.wcnf", Some(List()), false) // works
-  testWCNFDIMACSFile("simple", "f03.wcnf", Some(List(5))) // works*/
+  testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()), false)
+  testWCNFDIMACSFile("simple", "f02.wcnf", Some(List()), false)
+  testWCNFDIMACSFile("simple", "f03.wcnf", Some(List(5)))
   testWCNFDIMACSFile("simple", "f04.wcnf", Some(List(10)))
-  //testWCNFDIMACSFile("simple", "f05.wcnf", Some(List(6)))
+  testWCNFDIMACSFile("simple", "f05.wcnf", Some(List(6)))
 
-  /*testWCNFDIMACSFile("simple", "f06.wcnf", Some(List(2)))
+  testWCNFDIMACSFile("simple", "f06.wcnf", Some(List(2)))
   testWCNFDIMACSFile("simple", "f07.wcnf", Some(List(0, 2)))
   testWCNFDIMACSFile("simple", "f08.wcnf", Some(List(0, 1, 2, 3, 4)))
   testWCNFDIMACSFile("simple", "f09.wcnf", None)
@@ -91,5 +91,32 @@ class AdoptedBranchAndBoundTest extends Specification {
   testWCNFDIMACSFile("simple", "threeEmptyClauses.wcnf", None)
 
   testWCNFDIMACSFile("randomVertexCover", "edges00040_vertices00010.wcnf", Some(List(0, 1, 3, 5, 6, 7, 8, 9)))
-  testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))*/
+  testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
+
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "brpptimoneg.cnf.wcnf", 296)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100.cnf.wcnf", 14)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified.cnf.wcnf", 14)
+  // solution: Some(List(8, 11, 12, 20, 24, 36,         44,     61, 63,     66))
+  // optimal:  Some(List(8, 11, 12, 20, 24, 28, 36, 38, 44, 58, 61, 63, 65, 66))
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 7)
+  // solution: Some(List(8, 11, 12, 20, 24, 36,   ))
+  // optimal:  Some(List(8, 11, 12, 20, 24, 28, 36))
+  
+  
+  private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
+    val solver = new AdoptedBranchAndBound(new MiniSatJava())
+    "File " + fileName should {
+      "have " + result1 + " MCS clauses" in {
+        val reader = new PartialWeightedMaxSATReader()
+        reader.read(getFileString(subFolder, fileName))
+
+        solver.reset()
+        solver.addHardConstraint(reader.hardClauses)
+        val result = solver.solve(reader.softClauses.toList)
+        println(result)
+        result.get.size must be equalTo result1
+      }
+    }
+  }
+
 }
