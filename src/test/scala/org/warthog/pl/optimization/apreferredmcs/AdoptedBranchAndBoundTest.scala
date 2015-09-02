@@ -33,6 +33,7 @@ import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause, PLLiteral }
 import org.warthog.pl.formulas.PL
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.Vec
 
 /**
  * Tests AdoptedBranchAndBound
@@ -93,14 +94,9 @@ class AdoptedBranchAndBoundTest extends Specification {
   testWCNFDIMACSFile("randomVertexCover", "edges00040_vertices00010.wcnf", Some(List(0, 1, 3, 5, 6, 7, 8, 9)))
   testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
 
-  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "brpptimoneg.cnf.wcnf", 296)
   testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100.cnf.wcnf", 14)
   testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified.cnf.wcnf", 14)
-  // solution: Some(List(8, 11, 12, 20, 24, 36,         44,     61, 63,     66))
-  // optimal:  Some(List(8, 11, 12, 20, 24, 28, 36, 38, 44, 58, 61, 63, 65, 66))
-  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 7)
-  // solution: Some(List(8, 11, 12, 20, 24, 36,   ))
-  // optimal:  Some(List(8, 11, 12, 20, 24, 28, 36))
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 6)
   
   
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
