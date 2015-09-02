@@ -97,8 +97,7 @@ class AdoptedBranchAndBoundTest extends Specification {
   testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100.cnf.wcnf", 14)
   testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified.cnf.wcnf", 14)
   testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 6)
-  
-  
+
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
     val solver = new AdoptedBranchAndBound(new MiniSatJava())
     "File " + fileName should {
@@ -109,7 +108,7 @@ class AdoptedBranchAndBoundTest extends Specification {
         solver.reset()
         solver.addHardConstraint(reader.hardClauses)
         val result = solver.solve(reader.softClauses.toList)
-        println(result)
+
         result.get.size must be equalTo result1
       }
     }
