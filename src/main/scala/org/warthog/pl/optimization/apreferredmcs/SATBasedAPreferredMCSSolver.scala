@@ -29,6 +29,7 @@ import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.decisionprocedures.satsolver.Solver
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.datastructures.cnf.PLLiteral
+import org.warthog.pl.optimization.apreferredmcs.impl.TimeUsed
 
 /**
  * @author Konstantin Grupp

@@ -23,31 +23,56 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.apreferredmcs
+package org.warthog.pl.optimization.apreferredmcs.impl
 
 /**
  * @author Konstantin Grupp
  */
-class TimeUsed(functionName:String) {
+class PartitionMaker(strategyName: String, calcNumPartitions: (Int, Int) => Int) {
+
+  private var start: Int = 0
+  private var end: Int = 0
+  private var currentStart: Int = 0
+  private var remaining: Int = 0
+  private var k: Int = 0
+
+  def name() = strategyName
+
+  def createNewInstance() = new PartitionMaker(strategyName, calcNumPartitions)
   
-  private var time:Long = 0
-  private var counter:Int = 0
-  private var lastStart:List[Long] = List()
-  
-  def start() = {
-    lastStart = lastStart.+:(System.currentTimeMillis())
-    counter += 1
+  def initialize(s: Int, e: Int, recDepth: Int) {
+    start = s
+    end = e
+    currentStart = s
+    k = calcNumPartitions(recDepth, end - start)
+    remaining = k
   }
-  
-  def end() = {
-    time += System.currentTimeMillis() - lastStart.head
-    lastStart = lastStart.tail
+
+  def hasNext() = currentStart <= end
+
+  def nextPartition(skip: Int): (Int, Int) = {
+    val nStart = currentStart + skip
+    var nEnd = end
+
+    val difference = end - nStart + 1
+    var size = difference / remaining
+
+    if (size == 0) {
+      remaining -= 1
+      nEnd = currentStart
+    } else {
+      val modulo = difference % remaining
+
+      if (modulo != 0) size += 1
+      if (remaining == 1) {
+        nEnd = end
+      } else {
+        nEnd = nStart + size - 1
+      }
+      remaining -= 1
+    }
+    currentStart = nEnd + 1
+    (nStart, nEnd)
   }
-  
-  def getName() = functionName
-  def getCounter() = counter
-  def getTime() = time
-  
-  def getInfo() = functionName + "\t\t" + time + "ms\t\t" + counter + " Aufrufe"  
-  
+
 }

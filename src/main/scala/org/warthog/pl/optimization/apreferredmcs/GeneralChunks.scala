@@ -32,24 +32,32 @@ import org.warthog.pl.formulas.{ PLAtom, PL }
 import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.pl.generators.pbc.PBCtoSAT
 import org.warthog.generic.datastructures.cnf.ClauseLike
+import org.warthog.pl.optimization.apreferredmcs.impl.PartitionMaker
+import scala.util.control.Breaks.{ break, breakable }
+import org.warthog.pl.optimization.apreferredmcs.impl.ModelExploiting
 
 /**
  * Implements the general chunks approach (4.1 from paper)
  *
  * @author Konstantin Grupp
  */
-class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT: Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
+class GeneralChunks(satSolver: Solver, partitionMaker: PartitionMaker, useModelExploiting: Boolean = false, useBackbone: Boolean = false, assumeUNSAT: Boolean = false) extends SATBasedAPreferredMCSSolver(satSolver) {
 
-  def this(satSolver: Solver) = this(satSolver, 10)
+  def this(satSolver: Solver) = this(satSolver, PartitionStrategy.constant(10))
 
   override def name = {
+    var m = ""
+    if (useModelExploiting) m = "-modelExploiting"
+    var b = ""
+    if (useBackbone) b = "-backbone"
     var a = ""
     if (assumeUNSAT) a = "-assumeUNSAT"
-    "GeneralChunks-" + k + a
+    "GeneralChunks-" + partitionMaker.name + m + b + a
   }
 
   var delta: List[Int] = List()
   var softClausesAry: Array[ClauseLike[PL, PLLiteral]] = Array.empty
+  val modelExploiting = new ModelExploiting(satSolver)
 
   override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]) = {
     softClausesAry = new Array(softClauses.size)
@@ -69,56 +77,69 @@ class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT: Boolean = false) ext
    * @param softClauses
    * @param allClauses at start it should be has all soft clauses
    */
-  private def chunksHelper(recursion: Int, isRedundant: Boolean, start: Int, end: Int): Boolean = {
+  private def chunksHelper(recursion: Int, isRedundant: Boolean, start: Int, end: Int): (Boolean, Int) = {
     //println("chunksHelper "+start+" to "+end)
     Thread.sleep(0) // to handle interrupts
-    if (!isRedundant && mySat(start, end)) {
+    val isSatisfied = !isRedundant && mySat(start, end)
+    if (!isSatisfied) {
+      tUsatDel.start()
+      satSolver.undo()
+      tUsatDel.end()
+    }
+
+    if (isSatisfied) {
+      var gamma: List[ClauseLike[PL, PLLiteral]] = List()
+
+      if (useModelExploiting) {
+        // restricted model exploiting start
+        modelExploiting.reset
+        breakable {
+          for (j <- end + 1 to softClausesAry.size - 1) {
+            Thread.sleep(1) // to handle interrupts
+            val checkClause = softClausesAry(j)
+            if (modelExploiting.isSat(checkClause)) {
+              gamma = checkClause :: gamma
+            } else {
+              break
+            }
+          }
+        }
+        // restricted model exploiting end
+      }
+
+      tUsatDel.start
+      satSolver.undo
+      tUsatDel.end
+
       for (i <- start to end) {
         satSolver.add(softClausesAry(i))
       }
-      true
+      if (useModelExploiting) {
+        gamma.foreach(satSolver.add)
+      }
+
+      (true, gamma.size)
     } else if (end == start) {
       delta = start :: delta
-      false
-    } else {
-      val chunks = calcPartition(start, end)
-      var areSubCallsSAT = true
-      for (j <- 0 to chunks.size - 1) {
-        Thread.sleep(0) // to handle interrupts
-        val isConsistent = chunksHelper(recursion + 1, areSubCallsSAT && j == (k - 1), chunks(j)._1, chunks(j)._2)
-        areSubCallsSAT &&= isConsistent
-      }
-      areSubCallsSAT
-    }
-  }
-
-  private def calcPartition(start: Int, end: Int): Array[(Int, Int)] = {
-    val difference = end - start + 1
-    var size = difference / k
-    val modulo = difference % k
-    if (size == 0) {
-      val result: Array[(Int, Int)] = new Array(difference)
-      var j = 0
-      for (i <- start to end) {
-        result(j) = (i, i)
-        j += 1
-      }
-      result
-    } else {
-      val result: Array[(Int, Int)] = new Array(k)
-      if (modulo != 0) size += 1
-      var subEnd = start - 1
-      for (i <- 0 to k - 1) {
-        if (modulo != 0 && i == modulo) size -= 1
-        val subStart = subEnd + 1
-        if (i == k - 1) {
-          subEnd = end
-        } else {
-          subEnd = subStart + size - 1
+      if (useBackbone) {
+        for (lit <- softClausesAry(start).literals) {
+          satSolver.add(new ImmutablePLClause(lit.negate))
         }
-        result(i) = (subStart, subEnd)
       }
-      result
+      (false, 0)
+    } else {
+      val tempPartitionMaker = partitionMaker.createNewInstance()
+      tempPartitionMaker.initialize(start, end, recursion)
+      var areSubCallsSAT = true
+      var skip = 0
+      while (tempPartitionMaker.hasNext) {
+        Thread.sleep(0) // to handle interrupts
+        val (recStart, recEnd) = tempPartitionMaker.nextPartition(skip)
+        val result = chunksHelper(recursion + 1, areSubCallsSAT && !tempPartitionMaker.hasNext, recStart, recEnd)
+        areSubCallsSAT &&= result._1
+        skip = result._2
+      }
+      (areSubCallsSAT, skip)
     }
   }
 
@@ -138,9 +159,6 @@ class GeneralChunks(satSolver: Solver, k: Int, assumeUNSAT: Boolean = false) ext
     tUsat.start()
     val isSAT = satSolver.sat() == Solver.SAT
     tUsat.end()
-    tUsatDel.start()
-    satSolver.undo()
-    tUsatDel.end()
     isSAT
   }
 

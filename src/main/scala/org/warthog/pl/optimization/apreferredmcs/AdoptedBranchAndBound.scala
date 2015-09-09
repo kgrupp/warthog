@@ -37,6 +37,7 @@ import org.warthog.pl.optimization.apreferredmcs.impl.ClauseBAB
 import org.warthog.pl.optimization.apreferredmcs.impl.VariableBAB
 import org.warthog.pl.optimization.apreferredmcs.impl.BABUtil
 import org.warthog.pl.optimization.apreferredmcs.impl.VarState
+import org.warthog.pl.optimization.apreferredmcs.impl.TimeUsed
 
 /**
  * @author Konstantin Grupp

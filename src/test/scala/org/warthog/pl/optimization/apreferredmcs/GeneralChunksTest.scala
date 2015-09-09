@@ -33,6 +33,7 @@ import org.warthog.pl.optimization.maxsat.MaxSATHelper
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause, PLLiteral }
 import org.warthog.pl.formulas.PL
+import org.warthog.pl.optimization.apreferredmcs.impl.PartitionMaker
 
 /**
  * Tests general chunks algorithm
@@ -47,7 +48,11 @@ class GeneralChunksTest extends Specification {
     List("src", "test", "resources", "maxsat", "partial", folder, file).mkString(File.separator)
 
   private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[List[Int]], useAssumeUNSAT: Boolean = true) {
-    val solverLis = List(new GeneralChunks(new MiniSatJava(), 4), new GeneralChunks(new MiniSatJava(), 4, useAssumeUNSAT))
+    val partitionMaker = PartitionStrategy.constant(4)
+    val solverLis = List(new GeneralChunks(new MiniSatJava(), partitionMaker), 
+                         new GeneralChunks(new MiniSatJava(), partitionMaker, true, true, useAssumeUNSAT), 
+                         new GeneralChunks(new MiniSatJava(), partitionMaker, false, true, useAssumeUNSAT),
+                         new GeneralChunks(new MiniSatJava(), PartitionStrategy.maxSize(4, 2), true, false, useAssumeUNSAT))
     for (solver <- solverLis) {
       val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
       "File " + fileName + " with " + solver.name should {
@@ -67,8 +72,8 @@ class GeneralChunksTest extends Specification {
 
   testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None)
 
-  testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()))
-  testWCNFDIMACSFile("simple", "f02.wcnf", Some(List()))
+  testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()), false)
+  testWCNFDIMACSFile("simple", "f02.wcnf", Some(List()), false)
   testWCNFDIMACSFile("simple", "f03.wcnf", Some(List(5)))
   testWCNFDIMACSFile("simple", "f04.wcnf", Some(List(10)))
   testWCNFDIMACSFile("simple", "f05.wcnf", Some(List(6)))
@@ -85,7 +90,7 @@ class GeneralChunksTest extends Specification {
   testWCNFDIMACSFile("simple", "oneClauseFormulaHard.wcnf", Some(List()))
   testWCNFDIMACSFile("simple", "oneEmptyClauseSoft.wcnf", Some(List(0)))
   testWCNFDIMACSFile("simple", "oneEmptyClauseHard.wcnf", None)
-  testWCNFDIMACSFile("simple", "oneVariableFormula.wcnf", Some(List()))
+  testWCNFDIMACSFile("simple", "oneVariableFormula.wcnf", Some(List()), false)
   testWCNFDIMACSFile("simple", "oneVariableOneClauseFormulaSoft.wcnf", Some(List()), false)
   testWCNFDIMACSFile("simple", "oneVariableOneClauseFormulaHard.wcnf", Some(List()))
   testWCNFDIMACSFile("simple", "threeEmptyClauses.wcnf", None)

@@ -31,6 +31,7 @@ import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.decisionprocedures.satsolver.Model
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.transformations.CNFUtil
+import org.warthog.pl.optimization.apreferredmcs.impl.TimeUsed
 
 /**
  * Common interface for APreferred MCS MaxSAT solvers.
