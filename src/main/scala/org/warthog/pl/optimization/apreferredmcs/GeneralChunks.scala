@@ -132,10 +132,10 @@ class GeneralChunks(satSolver: Solver, partitionMaker: PartitionMaker, useModelE
       tempPartitionMaker.initialize(start, end, recursion)
       var areSubCallsSAT = true
       var skip = 0
-      while (tempPartitionMaker.hasNext) {
+      while (tempPartitionMaker.hasNext(skip)) {
         Thread.sleep(0) // to handle interrupts
         val (recStart, recEnd) = tempPartitionMaker.nextPartition(skip)
-        val result = chunksHelper(recursion + 1, areSubCallsSAT && !tempPartitionMaker.hasNext, recStart, recEnd)
+        val result = chunksHelper(recursion + 1, areSubCallsSAT && !tempPartitionMaker.hasNext(), recStart, recEnd)
         areSubCallsSAT &&= result._1
         skip = result._2
       }

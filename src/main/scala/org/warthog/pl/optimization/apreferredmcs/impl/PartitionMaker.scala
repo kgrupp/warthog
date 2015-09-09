@@ -30,25 +30,21 @@ package org.warthog.pl.optimization.apreferredmcs.impl
  */
 class PartitionMaker(strategyName: String, calcNumPartitions: (Int, Int) => Int) {
 
-  private var start: Int = 0
   private var end: Int = 0
   private var currentStart: Int = 0
   private var remaining: Int = 0
-  private var k: Int = 0
 
   def name() = strategyName
 
   def createNewInstance() = new PartitionMaker(strategyName, calcNumPartitions)
   
   def initialize(s: Int, e: Int, recDepth: Int) {
-    start = s
     end = e
     currentStart = s
-    k = calcNumPartitions(recDepth, end - start)
-    remaining = k
+    remaining = calcNumPartitions(recDepth, end - currentStart)
   }
 
-  def hasNext() = currentStart <= end
+  def hasNext(skip: Int = 0) = currentStart + skip <= end
 
   def nextPartition(skip: Int): (Int, Int) = {
     val nStart = currentStart + skip
@@ -58,19 +54,15 @@ class PartitionMaker(strategyName: String, calcNumPartitions: (Int, Int) => Int)
     var size = difference / remaining
 
     if (size == 0) {
-      remaining -= 1
-      nEnd = currentStart
+      nEnd = nStart
     } else {
       val modulo = difference % remaining
 
       if (modulo != 0) size += 1
-      if (remaining == 1) {
-        nEnd = end
-      } else {
-        nEnd = nStart + size - 1
-      }
-      remaining -= 1
+      nEnd = nStart + size - 1
+      if (remaining == 1 || end < nEnd) nEnd = end
     }
+    remaining -= 1
     currentStart = nEnd + 1
     (nStart, nEnd)
   }
