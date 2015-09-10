@@ -116,14 +116,14 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
         // Add clause to miniSatJavaInstance
         val resClause = new IntVec()
         clauseWithIDs.foreach { x => resClause.push(x) }
-        resClause.push(getMSJLit(assumptionVar, true, false))
+        resClause.push(getMSJLit(assumptionVar, true))
         miniSatJavaInstance.newClause(resClause, false)
 
       } else {
         assumptionVar = assumptionVarTest.get
         val intVecIndex = clauseToID.get(clause).get
 
-        assumptions.set(intVecIndex, getMSJLit(assumptionVar, false, true))
+        assumptions.set(intVecIndex, getMSJLit(assumptionVar, false))
       }
 
       if (!keepAssumptionClauses) {
@@ -147,7 +147,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
         val nextID = miniSatJavaInstance.newVar()
         idToVar += (nextID -> v)
         nextID
-      }), phaseFactor, false)
+      }), phaseFactor)
     }).toSet
   }
 
@@ -155,7 +155,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
     val variable = new PLAtom("AssumptionVar for: " + clause.toString())
     val nextID = miniSatJavaInstance.newVar()
     val intVarIndex = assumptions.size()
-    assumptions.push(getMSJLit(nextID, false, true))
+    assumptions.push(getMSJLit(nextID, false))
     idToVar += (nextID -> variable)
     varToID += (variable -> nextID)
     clauseToVar += (clause -> nextID)
@@ -163,13 +163,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
     nextID
   }
 
-  private def getMSJLit(variable: Int, phase: Boolean, isAssumption: Boolean) = {
-    if (isAssumption) {
-      MSJCoreProver.mkLit(variable, !phase)
-    } else {
-      MSJCoreProver.mkLit(variable, !phase)
-    }
-  }
+  private def getMSJLit(variable: Int, phase: Boolean) = MSJCoreProver.mkLit(variable, !phase)
 
   override def mark() {
     assumptionClauses = List() :: assumptionClauses
@@ -197,7 +191,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
               }
             }
             if (!clauseNeedToStay) {
-              assumptions.set(intVarIndex, getMSJLit(assumptionVar, true, true))
+              assumptions.set(intVarIndex, getMSJLit(assumptionVar, true))
             }
           }
         }

@@ -41,7 +41,6 @@ import org.warthog.pl.optimization.apreferredmcs.impl.TimeUsed
 abstract class APreferredMCSSolver() {
 
   protected var result: Option[List[Int]] = None
-  protected var model: Option[Model] = None
 
   def name: String
 
@@ -52,7 +51,6 @@ abstract class APreferredMCSSolver() {
 
   def reset() {
     result = None
-    model = None
   }
 
   def addHardConstraint(fm: Formula[PL]) {
@@ -101,6 +99,4 @@ abstract class APreferredMCSSolver() {
   protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]): List[Int]
 
   protected def areHardConstraintsSatisfiable(): Boolean
-
-  def getModel(): Option[Model] = model
 }
