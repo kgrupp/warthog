@@ -1,0 +1,89 @@
+new Clause: 0 learnt: false
+set var 0TRUE level: 0 reason: null
+new Clause: 2 learnt: false
+set var 1TRUE level: 0 reason: null
+KONFLIKT: null
+decisionLevel: 0 rootLevel: 0
+new Clause: 1,3,4 learnt: false
+set var 2TRUE level: 0 reason: null
+2 -> (~1, ~2)
+new Clause: 8,6 learnt: false
+3 -> (3)
+new Clause: 3,9,10 learnt: false
+5 -> (~2, ~3)
+new Clause: 2,9,12 learnt: false
+6 -> (2, ~3)
+assumption not possible: 2TRUE
+assume var 3UNDEF level: 1 to: true
+set var 3FALSE level: 1 reason: null
+assume var 5UNDEF level: 2 to: true
+set var 5FALSE level: 2 reason: null
+assume var 6UNDEF level: 3 to: true
+set var 6FALSE level: 3 reason: null
+set var 4TRUE level: 3 reason: [7]
+KONFLIKT: [9,10]
+0       0TRUE level: 0 reason: null polarity: false
+1       1TRUE level: 0 reason: null polarity: false
+2       2TRUE level: 0 reason: null polarity: false
+3       3FALSE level: 1 reason: null polarity: false
+4       4TRUE level: 3 reason: [7] polarity: false
+5       5FALSE level: 2 reason: null polarity: false
+6       6FALSE level: 3 reason: null polarity: false
+decisionLevel: 3 rootLevel: 3
+new Clause: 9,10 learnt: true
+set var 4FALSE level: 2 reason: [11]
+decisionLevel: 2 rootLevel: 3
+0       0TRUE level: 0 reason: null polarity: false
+1       1TRUE level: 0 reason: null polarity: false
+2       2TRUE level: 0 reason: null polarity: false
+3       3FALSE level: 1 reason: null polarity: false
+4       4FALSE level: 2 reason: [11] polarity: false
+5       5FALSE level: 2 reason: null polarity: false
+6       6UNDEF level: 3 reason: null polarity: true
+decisionLevel: 2 rootLevel: 3
+nextLit: 5FALSE
+KONFLIKT: [6,8]
+0       0TRUE level: 0 reason: null polarity: false
+1       1TRUE level: 0 reason: null polarity: false
+2       2TRUE level: 0 reason: null polarity: false
+3       3FALSE level: 1 reason: null polarity: false
+4       4FALSE level: 2 reason: [11] polarity: false
+5       5FALSE level: 2 reason: null polarity: false
+6       6UNDEF level: 3 reason: null polarity: true
+decisionLevel: 2 rootLevel: 3
+new Clause: 8,6 learnt: true
+set var 4TRUE level: 1 reason: [7]
+decisionLevel: 1 rootLevel: 3
+0       0TRUE level: 0 reason: null polarity: false
+1       1TRUE level: 0 reason: null polarity: false
+2       2TRUE level: 0 reason: null polarity: false
+3       3FALSE level: 1 reason: null polarity: false
+4       4TRUE level: 1 reason: [7] polarity: true
+5       5UNDEF level: 2 reason: null polarity: true
+6       6UNDEF level: 3 reason: null polarity: true
+decisionLevel: 1 rootLevel: 3
+nextLit: 3FALSE
+set var 5TRUE level: 1 reason: [8]
+KONFLIKT: null
+decisionLevel: 1 rootLevel: 3
+vor assume
+assume var 3FALSE level: 2 to: false
+KONFLIKT: null
+decisionLevel: 2 rootLevel: 3
+vor assume
+assume var 5TRUE level: 3 to: false
+KONFLIKT: null
+decisionLevel: 3 rootLevel: 3
+vor assume
+assume var 6UNDEF level: 4 to: false
+set var 6TRUE level: 4 reason: null
+KONFLIKT: null
+decisionLevel: 4 rootLevel: 3
+Map(4 -> 3, 1 -> 2, 0 -> 1)
+[info] ModifiedSatSolverApproachTest
+[info]
+[info] File f11.wcnf with ModifiedSatSolverApproach should
+[info] x have solution 2
+[error]    'Some(List(0, 2, 3))' is not equal to 'Some(List(0, 2))' (ModifiedSatSolverApproachTest.scala:63)
+[info]
+[info]

@@ -53,6 +53,8 @@ public class ModifiedMSJCoreProver {
 	protected IntVec trail = new IntVec();
 	protected IntVec trailLimits = new IntVec();
 	private int rootLevel;
+	private IntVec assumptions;
+	private BooleanVec isAssumptionVar = new BooleanVec();
 	private int qhead = 0;
 	protected BooleanVec seen = new BooleanVec();
 	public SolverStats stats = new SolverStats();
@@ -112,7 +114,7 @@ public class ModifiedMSJCoreProver {
 	// ////////////////////////////////
 	// Variable & clause management //
 	// ////////////////////////////////
-	public int newVar() {
+	public int newVar(boolean isAssumpVar) {
 		int index = vars.size();
 		MSJVariable newVar = new MSJVariable(index);
 		vars.push(newVar);
@@ -120,10 +122,12 @@ public class ModifiedMSJCoreProver {
 		watches.push(new Vec<MSJClause>());
 		watches.push(new Vec<MSJClause>());
 		seen.push(false);
+		isAssumptionVar.push(isAssumpVar);
 		return index;
 	}
 
 	public void newClause(IntVec clauseVec, boolean learnt) {
+		System.out.println("new Clause: "+clauseVec + " learnt: "+learnt);
 		if (!ok) {
 			return;
 		}
@@ -250,28 +254,71 @@ public class ModifiedMSJCoreProver {
 	// ///////////////////////
 	private LBool search(int nof_conflicts) {
 		if (!ok) {
+			System.out.println("ok was false");
 			return LBool.FALSE;
 		}
+		IntVec newAssumptions = new IntVec(assumptions.size());
+		for (int i = 0; i < assumptions.size(); i++) {
+			int p = assumptions.get(i);
+			assert (var(p) < vars.size());
+			MSJVariable variable = v(p);
+			switch (variable.assignment()) {
+			case UNDEF:	{
+				assume(p);
+				newAssumptions.push(p);
+				break;
+			}
+			default: 	if (LBool.fromBool(!sign(p)) != variable.assignment()) {
+				System.out.println("assumption not possible: " + v(p));
+			}
+			}
+		}
+		assumptions = newAssumptions;
+		rootLevel = newAssumptions.size();
 		stats.starts++;
 		int conflCount = 0;
 		model.clear();
 		while (true) {
 			MSJClause confl = propagate();
+			System.out.println("KONFLIKT: "+confl);
 			if (confl != null) {
 				stats.conflicts++;
 				conflCount++;
 				IntVec learntClause = new IntVec();
-				if (decisionLevel() == rootLevel) {
+				if (decisionLevel() == 0) {
 					analyzeFinal(confl, false);
 					return LBool.FALSE;
 				}
-				int backtrackLevel = analyze(confl, learntClause);
-				cancelUntil(backtrackLevel > rootLevel ? backtrackLevel
-						: rootLevel);
-				newClause(learntClause, true);
-				if (learntClause.size() == 1) {
-					v(learntClause.get(0)).setLevel(0);
+				
+				for (int i = 0; i < vars.size(); i++) {
+					MSJVariable v = vars.get(i);
+					System.out.println(i + "\t" + v + " level: " + v.level() + " reason: " + v.reason() + " polarity: "+v.polarity());
 				}
+				System.out.println("decisionLevel: "+decisionLevel() + " rootLevel: " + rootLevel);
+				if (decisionLevel() <= rootLevel) {
+					analyze(confl, learntClause);
+					cancelUntil(decisionLevel() - 1);
+					newClause(learntClause, true);
+					if (learntClause.size() == 1) {
+						v(learntClause.get(0)).setLevel(0);
+					}
+				} else {
+					// Normal backtracking
+					int backtrackLevel = analyze(confl, learntClause);
+					cancelUntil(backtrackLevel > rootLevel ? backtrackLevel
+							: rootLevel);
+					newClause(learntClause, true);
+					if (learntClause.size() == 1) {
+						v(learntClause.get(0)).setLevel(0);
+					}
+				}
+				System.out.println("decisionLevel: "+decisionLevel() + " rootLevel: " + rootLevel);
+				for (int i = 0; i < vars.size(); i++) {
+					MSJVariable v = vars.get(i);
+					System.out.println(i + "\t" + v + " level: " + v.level() + " reason: " + v.reason() + " polarity: "+v.polarity());
+				}
+				System.out.println("nextLit: "+v(pickBranchLit()));
+				//if (true) throw new AssertionError();
 				claDecayActivity();
 				if (--learntsize_adjust_cnt == 0) {
 					learntsize_adjust_confl *= learntsize_adjust_inc;
@@ -292,7 +339,7 @@ public class ModifiedMSJCoreProver {
 				}
 			} else {
 				if (nof_conflicts >= 0 && conflCount >= nof_conflicts) {
-					cancelUntil(rootLevel);
+					cancelUntil(0);
 					return LBool.UNDEF;
 				}
 				if (decisionLevel() == 0) {
@@ -310,9 +357,10 @@ public class ModifiedMSJCoreProver {
 				if (next == -1) {
 					for (int i = 0; i < vars.size(); i++)
 						model.push(vars.get(i).assignment());
-					cancelUntil(rootLevel);
+					cancelUntil(0);
 					return LBool.TRUE;
 				}
+				System.out.println("vor assume");
 				assume(next);
 			}
 		}
@@ -369,7 +417,11 @@ public class ModifiedMSJCoreProver {
 						// Did not find watch -- clause is unit under assignment
 						if (!foundWatch) {
 							watchers.set(j++, c);
-							if (!enqueue(first, c)) {
+							/*//TODO 
+							MSJVariable variable = v(first);
+							if (isAssumptionVar.get(variable.num())) {
+								variable.setPolarity(sign(first));
+							} else*/ if (!enqueue(first, c)) {
 								if (decisionLevel() == 0) {
 									ok = false;
 								}
@@ -387,6 +439,8 @@ public class ModifiedMSJCoreProver {
 		return confl;
 	}
 
+	private IVec<MSJVariable> analyzeVars = null;
+
 	/**
 	 * Calculates the backtracklevel
 	 * 
@@ -397,6 +451,7 @@ public class ModifiedMSJCoreProver {
 	 * @return
 	 */
 	protected int analyze(MSJClause conflictClause, IntVec learntVec) {
+		analyzeVars = new Vec<MSJVariable>();
 		MSJClause confl = conflictClause;
 		int pathCounter = 0;
 		int conflictLit = litUndef;
@@ -414,15 +469,22 @@ public class ModifiedMSJCoreProver {
 			}
 			for (int j = (conflictLit == litUndef) ? 0 : 1; j < c.size(); j++) {
 				int q = c.get(j);
-				if (!seen.get(var(q)) && v(q).level() > 0) {
-					v(q).bumpActivity();
+				MSJVariable variable = v(q);
+				if (!seen.get(var(q)) && variable.level() > 0) {
+					int varLevel = variable.level();
+					variable.bumpActivity();
 					seen.set(var(q), true);
-					if (v(q).level() == decisionLevel()) {
+					if (varLevel == decisionLevel()) {
 						pathCounter++;
 					} else {
+						if (varLevel < rootLevel) {
+							analyzeVars.push(variable);
+							//System.out.println("Variable: " + variable);
+						}
 						learntVec.push(q);
-						backtrackLevel = backtrackLevel > v(q).level() ? backtrackLevel
-								: v(q).level();
+						backtrackLevel = backtrackLevel > varLevel ? backtrackLevel
+								: varLevel;
+						//System.out.println("Var: " + variable + " "+ backtrackLevel);
 					}
 				}
 			}
@@ -580,6 +642,13 @@ public class ModifiedMSJCoreProver {
 	}
 
 	private int pickBranchLit() {
+		int decisionLevel = decisionLevel();
+		System.out.println("decisionLevel: "+ decisionLevel + " rootLevel: " + rootLevel);
+		if (decisionLevel != 0 && decisionLevel <= rootLevel) {
+			
+			int variable = var(assumptions.get(decisionLevel()-1));
+			return mkLit(variable, v(variable).polarity());
+		}
 		while (!varHeap.isEmpty()) {
 			MSJVariable next = varHeap.heapExtractMax();
 			if (next.assignment() == LBool.UNDEF) {
@@ -591,6 +660,7 @@ public class ModifiedMSJCoreProver {
 
 	protected boolean assume(int lit) {
 		trailLimits.push(trail.size());
+		System.out.println("assume var " + v(lit) + " level: " + decisionLevel() + " to: " + sign(lit));
 		return enqueue(lit, null);
 	}
 
@@ -603,6 +673,7 @@ public class ModifiedMSJCoreProver {
 			var.setLevel(decisionLevel());
 			var.setReason(reason);
 			trail.push(lit);
+			System.out.println("set var " + var + " level: " + decisionLevel() + " reason: " + reason);
 			return true;
 		}
 	}
@@ -752,6 +823,8 @@ public class ModifiedMSJCoreProver {
 		learntsize_adjust_cnt = (int) learntsize_adjust_confl;
 		LBool status = LBool.UNDEF;
 		rootLevel = assumps.size();
+		assumptions = assumps;
+		/*
 		for (int i = 0; i < assumps.size(); i++) {
 			int p = assumps.get(i);
 			assert (var(p) < vars.size());
@@ -772,6 +845,7 @@ public class ModifiedMSJCoreProver {
 					conflict.clear();
 					conflict.push(not(p));
 				}
+				System.out.println("assumption fails");
 				cancelUntil(0);
 				return false;
 			}
@@ -779,10 +853,11 @@ public class ModifiedMSJCoreProver {
 			if (confl != null) {
 				analyzeFinal(confl, false);
 				assert (conflict.size() > 0);
+				System.out.println("propagation after assumption");
 				cancelUntil(0);
 				return false;
 			}
-		}
+		}*/
 		if (params.log) {
 			System.out
 					.print("===============================[MiniSAT Java]======================\n");

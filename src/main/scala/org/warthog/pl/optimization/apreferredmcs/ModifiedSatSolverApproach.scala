@@ -48,7 +48,7 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     val clauseAsIntVec = new IntVec(clause.literals.map(literal => {
       val (v, phase) = (literal.variable, literal.phase)
       val id = varToID.getOrElseUpdate(v, {
-        modifiedSatSolver.newVar()
+        modifiedSatSolver.newVar(false)
         val nextID = varToID.size
         idToVar += (nextID -> v)
         nextID
@@ -83,15 +83,22 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     // Normalization
     var i = 0
     for (clause <- softClauses) {
-      val variable = modifiedSatSolver.newVar()
-      assumptionVars.push(getMSJLit(variable, true))
+      val variable = modifiedSatSolver.newVar(true)
+      if (i == 6) {
+        assumptionVars.push(getMSJLit(variable, false))
+      } else {
+        assumptionVars.push(getMSJLit(variable, false))
+      }
+      
       // add clause with assumptionVar negate and assumptionVar as unit clause
       internalAddSoft(clause, variable)
+      println(variable + " -> " + clause)
       i += 1
     }
     
     // modified sat solving
-    val result = modifiedSatSolver.solve() //assumptionVars)
+    val result = modifiedSatSolver.solve(assumptionVars) //assumptionVars)
+    println(idToVar)
     if (!result) {
       throw new AssertionError("sat was false -> solve does not work") 
     }
@@ -101,8 +108,8 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     for (i <- softClauses.size - 1 to 0 by -1) {
       val assumptionVar = ModifiedMSJCoreProver.`var`(assumptionVars.get(i))
       modifiedSatSolver.getVarState(assumptionVar) match {
-        case LBool.TRUE  => 
-        case LBool.FALSE => delta = i :: delta
+        case LBool.TRUE  => delta = i :: delta
+        case LBool.FALSE => 
         case LBool.UNDEF => throw new AssertionError("assumptionVars should always be defined")
       } 
     }
@@ -121,7 +128,7 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     val resClause = new IntVec()
     val clauseWithIDs = getIDsWithPhase(clause)
     clauseWithIDs.foreach(resClause.push)
-    resClause.push(getMSJLit(assumptionVar, false))
+    resClause.push(getMSJLit(assumptionVar, true))
     modifiedSatSolver.newClause(resClause, false)
   }
   
@@ -133,7 +140,7 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     clause.literals.map(literal => {
       val (v, phaseFactor) = (literal.variable, literal.phase)
       getMSJLit(varToID.getOrElseUpdate(v, {
-        val nextID = modifiedSatSolver.newVar()
+        val nextID = modifiedSatSolver.newVar(false)
         idToVar += (nextID -> v)
         nextID
       }), phaseFactor)
