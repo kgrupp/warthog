@@ -49,12 +49,14 @@ public class ModifiedMSJCoreProver {
 	protected IVec<MSJClause> learnts = new Vec<MSJClause>();
 	protected IVec<MSJVariable> vars = new Vec<MSJVariable>();
 	private HeapWithIndex<MSJVariable> varHeap = new HeapWithIndex<MSJVariable>();
+	private HeapWithIndex<MSJVariable> assumptionVarHeap = new HeapWithIndex<MSJVariable>();
 	private IVec<IVec<MSJClause>> watches = new Vec<IVec<MSJClause>>();
 	protected IntVec trail = new IntVec();
 	protected IntVec trailLimits = new IntVec();
 	private int rootLevel;
 	private IntVec assumptions;
 	private BooleanVec isAssumptionVar = new BooleanVec();
+	private int assumptionLevel = 0;
 	private int qhead = 0;
 	protected BooleanVec seen = new BooleanVec();
 	public SolverStats stats = new SolverStats();
@@ -118,7 +120,12 @@ public class ModifiedMSJCoreProver {
 		int index = vars.size();
 		MSJVariable newVar = new MSJVariable(index);
 		vars.push(newVar);
-		varHeap.insert(newVar);
+		if (isAssumpVar) {
+			newVar.setActivityToConstant(Integer.MAX_VALUE-index);
+			assumptionVarHeap.insert(newVar);
+		} else {
+			varHeap.insert(newVar);
+		}
 		watches.push(new Vec<MSJClause>());
 		watches.push(new Vec<MSJClause>());
 		seen.push(false);
@@ -257,24 +264,13 @@ public class ModifiedMSJCoreProver {
 			System.out.println("ok was false");
 			return LBool.FALSE;
 		}
-		IntVec newAssumptions = new IntVec(assumptions.size());
+		assumptionLevel = 0;
 		for (int i = 0; i < assumptions.size(); i++) {
-			int p = assumptions.get(i);
-			assert (var(p) < vars.size());
-			MSJVariable variable = v(p);
-			switch (variable.assignment()) {
-			case UNDEF:	{
-				assume(p);
-				newAssumptions.push(p);
-				break;
-			}
-			default: 	if (LBool.fromBool(!sign(p)) != variable.assignment()) {
-				System.out.println("assumption not possible: " + v(p));
-			}
+			int variable = assumptions.get(i);
+			if (isAssumptionVar.get(variable) && vars.get(variable).assignment() != LBool.UNDEF) {
+				assumptionLevel++;
 			}
 		}
-		assumptions = newAssumptions;
-		rootLevel = newAssumptions.size();
 		stats.starts++;
 		int conflCount = 0;
 		model.clear();
@@ -290,12 +286,12 @@ public class ModifiedMSJCoreProver {
 					return LBool.FALSE;
 				}
 				
-				for (int i = 0; i < vars.size(); i++) {
+				/*for (int i = 0; i < vars.size(); i++) {
 					MSJVariable v = vars.get(i);
 					System.out.println(i + "\t" + v + " level: " + v.level() + " reason: " + v.reason() + " polarity: "+v.polarity());
 				}
-				System.out.println("decisionLevel: "+decisionLevel() + " rootLevel: " + rootLevel);
-				if (decisionLevel() <= rootLevel) {
+				System.out.println("decisionLevel: "+decisionLevel() + " rootLevel: " + rootLevel);*/
+				if (assumptionLevel < rootLevel) {
 					analyze(confl, learntClause);
 					cancelUntil(decisionLevel() - 1);
 					newClause(learntClause, true);
@@ -305,19 +301,18 @@ public class ModifiedMSJCoreProver {
 				} else {
 					// Normal backtracking
 					int backtrackLevel = analyze(confl, learntClause);
-					cancelUntil(backtrackLevel > rootLevel ? backtrackLevel
-							: rootLevel);
+					cancelUntil(backtrackLevel);
 					newClause(learntClause, true);
 					if (learntClause.size() == 1) {
 						v(learntClause.get(0)).setLevel(0);
 					}
 				}
-				System.out.println("decisionLevel: "+decisionLevel() + " rootLevel: " + rootLevel);
+				/*System.out.println("decisionLevel: "+decisionLevel() + " rootLevel: " + rootLevel);
 				for (int i = 0; i < vars.size(); i++) {
 					MSJVariable v = vars.get(i);
 					System.out.println(i + "\t" + v + " level: " + v.level() + " reason: " + v.reason() + " polarity: "+v.polarity());
 				}
-				System.out.println("nextLit: "+v(pickBranchLit()));
+				System.out.println("nextLit: "+v(pickBranchLit()));*/
 				//if (true) throw new AssertionError();
 				claDecayActivity();
 				if (--learntsize_adjust_cnt == 0) {
@@ -631,8 +626,18 @@ public class ModifiedMSJCoreProver {
 				var.assign(LBool.UNDEF);
 				var.setReason(null);
 				var.setPolarity(sign(trail.get(c)));
-				if (varHeap.find(var) == -1) {
-					varHeap.insert(var);
+				if (isAssumptionVar.get(var.num())) {
+					assumptionLevel--;
+					if (assumptionLevel == rootLevel) {
+						assumptionLevel--;
+					}
+					if (assumptionVarHeap.find(var) == -1) {
+						assumptionVarHeap.insert(var);
+					}
+				} else {
+					if (varHeap.find(var) == -1) {
+						varHeap.insert(var);
+					}
 				}
 			}
 			trail.shrink(trail.size() - trailLimits.get(level));
@@ -643,17 +648,23 @@ public class ModifiedMSJCoreProver {
 
 	private int pickBranchLit() {
 		int decisionLevel = decisionLevel();
-		System.out.println("decisionLevel: "+ decisionLevel + " rootLevel: " + rootLevel);
-		if (decisionLevel != 0 && decisionLevel <= rootLevel) {
-			
-			int variable = var(assumptions.get(decisionLevel()-1));
-			return mkLit(variable, v(variable).polarity());
-		}
-		while (!varHeap.isEmpty()) {
-			MSJVariable next = varHeap.heapExtractMax();
-			if (next.assignment() == LBool.UNDEF) {
-				return mkLit(next.num(), next.polarity());
+		System.out.println("decisionLevel: "+ decisionLevel + " rootLevel: " + rootLevel + " assumptionLevel: " + assumptionLevel);
+		if (rootLevel != 0 && assumptionLevel <= rootLevel) {
+			while (!assumptionVarHeap.isEmpty()) {
+				MSJVariable next = assumptionVarHeap.heapExtractMax();
+				if (next.assignment() == LBool.UNDEF) {
+					return mkLit(next.num(), next.polarity());
+				}
 			}
+			throw new AssertionError("should not happen: assumptionLevel <= rootLevel but all vars are defined");
+		} else {
+			while (!varHeap.isEmpty()) {
+				MSJVariable next = varHeap.heapExtractMax();
+				if (next.assignment() == LBool.UNDEF) {
+					return mkLit(next.num(), next.polarity());
+				}
+			}
+			
 		}
 		return -1;
 	}
@@ -673,7 +684,13 @@ public class ModifiedMSJCoreProver {
 			var.setLevel(decisionLevel());
 			var.setReason(reason);
 			trail.push(lit);
-			System.out.println("set var " + var + " level: " + decisionLevel() + " reason: " + reason);
+			if (isAssumptionVar.get(var(lit))) {
+				assumptionLevel++;
+				if (assumptionLevel == rootLevel) {
+					assumptionLevel++;
+				}
+			}
+			System.out.println("set var " + var + " level: " + decisionLevel() + " assumptionLevel: " + assumptionLevel + " reason: " + reason);
 			return true;
 		}
 	}

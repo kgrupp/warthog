@@ -33,6 +33,7 @@ public class MSJVariable implements ComparableWithIndex<MSJVariable> {
   private int level = -1;
   private MSJClause reason = null;
   private int activity = 0;
+  private boolean fixActivity = false;
   private boolean polarity = false;
   private int index;
 
@@ -83,12 +84,17 @@ public class MSJVariable implements ComparableWithIndex<MSJVariable> {
     return assignment;
   }
 
+  public void setActivityToConstant(int activity) {
+	  this.activity = activity;
+	  fixActivity = true;
+  }
+  
   public void bumpActivity() {
-    activity++;
+	if (!fixActivity) activity++;
   }
 
   public void decayActivity(int varRescale) {
-    activity /= varRescale;
+	  if (!fixActivity) activity /= varRescale;
   }
 
   public void setPolarity(boolean polarity) {

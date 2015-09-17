@@ -84,11 +84,7 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     var i = 0
     for (clause <- softClauses) {
       val variable = modifiedSatSolver.newVar(true)
-      if (i == 6) {
-        assumptionVars.push(getMSJLit(variable, false))
-      } else {
-        assumptionVars.push(getMSJLit(variable, false))
-      }
+      assumptionVars.push(variable)
       
       // add clause with assumptionVar negate and assumptionVar as unit clause
       internalAddSoft(clause, variable)
@@ -106,10 +102,10 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     // Analyzing result
     var delta: List[Int] = Nil
     for (i <- softClauses.size - 1 to 0 by -1) {
-      val assumptionVar = ModifiedMSJCoreProver.`var`(assumptionVars.get(i))
+      val assumptionVar = assumptionVars.get(i)
       modifiedSatSolver.getVarState(assumptionVar) match {
-        case LBool.TRUE  => delta = i :: delta
-        case LBool.FALSE => 
+        case LBool.TRUE  => 
+        case LBool.FALSE => delta = i :: delta
         case LBool.UNDEF => throw new AssertionError("assumptionVars should always be defined")
       } 
     }
@@ -128,7 +124,7 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     val resClause = new IntVec()
     val clauseWithIDs = getIDsWithPhase(clause)
     clauseWithIDs.foreach(resClause.push)
-    resClause.push(getMSJLit(assumptionVar, true))
+    resClause.push(getMSJLit(assumptionVar, false))
     modifiedSatSolver.newClause(resClause, false)
   }
   
