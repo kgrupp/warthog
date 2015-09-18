@@ -75,7 +75,7 @@ class ModifiedSatSolverApproachTest extends Specification {
 
   testWCNFDIMACSFile("simple", "f06.wcnf", Some(List(2)))
   testWCNFDIMACSFile("simple", "f07.wcnf", Some(List(0, 2)))
-  testWCNFDIMACSFile("simple", "f08.wcnf", Some(List(0, 1, 2, 3, 4))) // TODO
+  testWCNFDIMACSFile("simple", "f08.wcnf", Some(List(0, 1, 2, 3, 4)))
   testWCNFDIMACSFile("simple", "f09.wcnf", None)
   testWCNFDIMACSFile("simple", "f10.wcnf", None)
 
@@ -83,7 +83,7 @@ class ModifiedSatSolverApproachTest extends Specification {
 
   testWCNFDIMACSFile("simple", "oneClauseFormulaSoft.wcnf", Some(List()))
   testWCNFDIMACSFile("simple", "oneClauseFormulaHard.wcnf", Some(List()))
-  testWCNFDIMACSFile("simple", "oneEmptyClauseSoft.wcnf", Some(List(0)))  // TODO
+  testWCNFDIMACSFile("simple", "oneEmptyClauseSoft.wcnf", Some(List(0)))
   testWCNFDIMACSFile("simple", "oneEmptyClauseHard.wcnf", None)
   testWCNFDIMACSFile("simple", "oneVariableFormula.wcnf", Some(List()))
   testWCNFDIMACSFile("simple", "oneVariableOneClauseFormulaSoft.wcnf", Some(List()))
@@ -93,9 +93,9 @@ class ModifiedSatSolverApproachTest extends Specification {
   testWCNFDIMACSFile("randomVertexCover", "edges00040_vertices00010.wcnf", Some(List(0, 1, 3, 5, 6, 7, 8, 9)))
   testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
   
-  //testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422) // TODO
-  //testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 6)
-  //testWCNFDIMACSFile2("simple", "testingMinisatRework1.wcnf", 1)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422) // TODO
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 6)
+  testWCNFDIMACSFile2("simple", "testingMinisatRework1.wcnf", 1)
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
     val solver = new ModifiedSatSolverApproach()
     "File " + fileName should {
@@ -106,6 +106,7 @@ class ModifiedSatSolverApproachTest extends Specification {
         solver.reset()
         solver.addHardConstraint(reader.hardClauses)
         val result = solver.solve(reader.softClauses.toList)
+        println(result)
 
         result.get.size must be equalTo result1
       }

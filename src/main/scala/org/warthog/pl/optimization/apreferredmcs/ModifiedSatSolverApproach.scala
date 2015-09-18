@@ -88,12 +88,11 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
       
       // add clause with assumptionVar negate and assumptionVar as unit clause
       internalAddSoft(clause, variable)
-      println(variable + " -> " + clause)
       i += 1
     }
     
     // modified sat solving
-    val result = modifiedSatSolver.solve(assumptionVars) //assumptionVars)
+    val result = modifiedSatSolver.solve(assumptionVars)
     println(idToVar)
     if (!result) {
       throw new AssertionError("sat was false -> solve does not work") 

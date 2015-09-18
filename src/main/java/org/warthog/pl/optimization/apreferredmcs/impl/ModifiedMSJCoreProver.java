@@ -134,7 +134,6 @@ public class ModifiedMSJCoreProver {
 	}
 
 	public void newClause(IntVec clauseVec, boolean learnt) {
-		System.out.println("new Clause: "+clauseVec + " learnt: "+learnt);
 		if (!ok) {
 			return;
 		}
@@ -261,7 +260,6 @@ public class ModifiedMSJCoreProver {
 	// ///////////////////////
 	private LBool search(int nof_conflicts) {
 		if (!ok) {
-			System.out.println("ok was false");
 			return LBool.FALSE;
 		}
 		assumptionLevel = 0;
@@ -276,7 +274,6 @@ public class ModifiedMSJCoreProver {
 		model.clear();
 		while (true) {
 			MSJClause confl = propagate();
-			System.out.println("KONFLIKT: "+confl);
 			if (confl != null) {
 				stats.conflicts++;
 				conflCount++;
@@ -355,7 +352,6 @@ public class ModifiedMSJCoreProver {
 					cancelUntil(0);
 					return LBool.TRUE;
 				}
-				System.out.println("vor assume");
 				assume(next);
 			}
 		}
@@ -412,11 +408,7 @@ public class ModifiedMSJCoreProver {
 						// Did not find watch -- clause is unit under assignment
 						if (!foundWatch) {
 							watchers.set(j++, c);
-							/*//TODO 
-							MSJVariable variable = v(first);
-							if (isAssumptionVar.get(variable.num())) {
-								variable.setPolarity(sign(first));
-							} else*/ if (!enqueue(first, c)) {
+							if (!enqueue(first, c)) {
 								if (decisionLevel() == 0) {
 									ok = false;
 								}
@@ -624,21 +616,24 @@ public class ModifiedMSJCoreProver {
 			for (int c = trail.size() - 1; c >= trailLimits.get(level); c--) {
 				MSJVariable var = v(trail.get(c));
 				var.assign(LBool.UNDEF);
-				var.setReason(null);
-				var.setPolarity(sign(trail.get(c)));
 				if (isAssumptionVar.get(var.num())) {
-					assumptionLevel--;
-					if (assumptionLevel == rootLevel) {
-						assumptionLevel--;
+					if (var.reason() == null) {
+						var.setPolarity(sign(trail.get(c)));
+					} else {
+						var.setPolarity(false);
 					}
+					
+					assumptionLevel--;
 					if (assumptionVarHeap.find(var) == -1) {
 						assumptionVarHeap.insert(var);
 					}
 				} else {
+					var.setPolarity(sign(trail.get(c)));
 					if (varHeap.find(var) == -1) {
 						varHeap.insert(var);
 					}
 				}
+				var.setReason(null);
 			}
 			trail.shrink(trail.size() - trailLimits.get(level));
 			trailLimits.shrink(trailLimits.size() - level);
@@ -647,9 +642,7 @@ public class ModifiedMSJCoreProver {
 	}
 
 	private int pickBranchLit() {
-		int decisionLevel = decisionLevel();
-		System.out.println("decisionLevel: "+ decisionLevel + " rootLevel: " + rootLevel + " assumptionLevel: " + assumptionLevel);
-		if (rootLevel != 0 && assumptionLevel <= rootLevel) {
+		if (rootLevel != 0 && assumptionLevel < rootLevel) {
 			while (!assumptionVarHeap.isEmpty()) {
 				MSJVariable next = assumptionVarHeap.heapExtractMax();
 				if (next.assignment() == LBool.UNDEF) {
@@ -671,7 +664,6 @@ public class ModifiedMSJCoreProver {
 
 	protected boolean assume(int lit) {
 		trailLimits.push(trail.size());
-		System.out.println("assume var " + v(lit) + " level: " + decisionLevel() + " to: " + sign(lit));
 		return enqueue(lit, null);
 	}
 
@@ -686,9 +678,6 @@ public class ModifiedMSJCoreProver {
 			trail.push(lit);
 			if (isAssumptionVar.get(var(lit))) {
 				assumptionLevel++;
-				if (assumptionLevel == rootLevel) {
-					assumptionLevel++;
-				}
 			}
 			System.out.println("set var " + var + " level: " + decisionLevel() + " assumptionLevel: " + assumptionLevel + " reason: " + reason);
 			return true;

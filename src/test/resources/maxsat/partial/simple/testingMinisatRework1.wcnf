@@ -1,6 +1,6 @@
 c
 c This is a simple CNF formula in DIMACS Format
-c Optimum: 0
+c Optimum: (-323)
 c
 p wcnf 101009 0 10110
 10110 534 758 0
@@ -10103,18 +10103,18 @@ p wcnf 101009 0 10110
 10110 -208 633 0
 10110 -527 770 0
 10110 -664 -189 0
-c1 -719 0
-c1 -133 0
-cc delta
-c1 -126 0
-1 -560 0
+c 1 -719 0
+c 1 -133 0
+c delta
+c 1 -126 0
+c1 -560 0
 c delta
 1 -323 0
 c delta
-c1 -780 0
-1 -112 0
+c 1 -780 0
+c1 -112 0
 c delta
-c1 -607 0
+c 1 -607 0
 1 -569 0
 c error
-1 -141 0
+c1 -141 0
