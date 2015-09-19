@@ -83,6 +83,7 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     // Normalization
     var i = 0
     for (clause <- softClauses) {
+      Thread.sleep(0) // to handle interrupts
       val variable = modifiedSatSolver.newVar(true)
       assumptionVars.push(variable)
       
@@ -92,8 +93,7 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
     }
     
     // modified sat solving
-    val result = modifiedSatSolver.solve(assumptionVars)
-    println(idToVar)
+    val result = modifiedSatSolver.solve()
     if (!result) {
       throw new AssertionError("sat was false -> solve does not work") 
     }

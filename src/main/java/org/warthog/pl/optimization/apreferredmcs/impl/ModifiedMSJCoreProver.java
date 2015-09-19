@@ -49,14 +49,14 @@ public class ModifiedMSJCoreProver {
 	protected IVec<MSJClause> learnts = new Vec<MSJClause>();
 	protected IVec<MSJVariable> vars = new Vec<MSJVariable>();
 	private HeapWithIndex<MSJVariable> varHeap = new HeapWithIndex<MSJVariable>();
-	private HeapWithIndex<MSJVariable> assumptionVarHeap = new HeapWithIndex<MSJVariable>();
+	private HeapWithIndex<MSJVariable> firstDecisionsVarHeap = new HeapWithIndex<MSJVariable>();
 	private IVec<IVec<MSJClause>> watches = new Vec<IVec<MSJClause>>();
 	protected IntVec trail = new IntVec();
 	protected IntVec trailLimits = new IntVec();
-	private int rootLevel;
-	private IntVec assumptions;
-	private BooleanVec isAssumptionVar = new BooleanVec();
-	private int assumptionLevel = 0;
+	private int rootLevel = 0;
+	private int maxFirstDecisions = 0;
+	private int currentFirstDecisions = 0;
+	private BooleanVec isFirstDecisionVar = new BooleanVec();
 	private int qhead = 0;
 	protected BooleanVec seen = new BooleanVec();
 	public SolverStats stats = new SolverStats();
@@ -122,18 +122,20 @@ public class ModifiedMSJCoreProver {
 		vars.push(newVar);
 		if (isAssumpVar) {
 			newVar.setActivityToConstant(Integer.MAX_VALUE-index);
-			assumptionVarHeap.insert(newVar);
+			firstDecisionsVarHeap.insert(newVar);
+			maxFirstDecisions++;
 		} else {
 			varHeap.insert(newVar);
 		}
 		watches.push(new Vec<MSJClause>());
 		watches.push(new Vec<MSJClause>());
 		seen.push(false);
-		isAssumptionVar.push(isAssumpVar);
+		isFirstDecisionVar.push(isAssumpVar);
 		return index;
 	}
 
 	public void newClause(IntVec clauseVec, boolean learnt) {
+		//System.out.println("new Clause: "+clauseVec + " learnt: "+learnt);
 		if (!ok) {
 			return;
 		}
@@ -258,27 +260,24 @@ public class ModifiedMSJCoreProver {
 	// ///////////////////////
 	// Main CDCL functions //
 	// ///////////////////////
-	private LBool search(int nof_conflicts) {
+	private LBool search(int nof_conflicts) throws InterruptedException {
 		if (!ok) {
+			//System.out.println("ok was false");
 			return LBool.FALSE;
 		}
-		assumptionLevel = 0;
-		for (int i = 0; i < assumptions.size(); i++) {
-			int variable = assumptions.get(i);
-			if (isAssumptionVar.get(variable) && vars.get(variable).assignment() != LBool.UNDEF) {
-				assumptionLevel++;
-			}
-		}
+		//System.out.println("Start SAT solving");
 		stats.starts++;
 		int conflCount = 0;
 		model.clear();
 		while (true) {
+			Thread.sleep(0); // to handle interrupts
 			MSJClause confl = propagate();
 			if (confl != null) {
+				//System.out.println("KONFLIKT: "+confl);
 				stats.conflicts++;
 				conflCount++;
 				IntVec learntClause = new IntVec();
-				if (decisionLevel() == 0) {
+				if (decisionLevel() == rootLevel) {
 					analyzeFinal(confl, false);
 					return LBool.FALSE;
 				}
@@ -286,9 +285,9 @@ public class ModifiedMSJCoreProver {
 				/*for (int i = 0; i < vars.size(); i++) {
 					MSJVariable v = vars.get(i);
 					System.out.println(i + "\t" + v + " level: " + v.level() + " reason: " + v.reason() + " polarity: "+v.polarity());
-				}
-				System.out.println("decisionLevel: "+decisionLevel() + " rootLevel: " + rootLevel);*/
-				if (assumptionLevel < rootLevel) {
+				}*/
+				//System.out.println("decisionLevel: "+decisionLevel() + " currentFD: " + currentFirstDecisions + " maxFD: " + maxFirstDecisions);
+				if (currentFirstDecisions < maxFirstDecisions) {
 					analyze(confl, learntClause);
 					cancelUntil(decisionLevel() - 1);
 					newClause(learntClause, true);
@@ -298,13 +297,15 @@ public class ModifiedMSJCoreProver {
 				} else {
 					// Normal backtracking
 					int backtrackLevel = analyze(confl, learntClause);
-					cancelUntil(backtrackLevel);
+					cancelUntil(backtrackLevel > rootLevel ? backtrackLevel
+							: rootLevel);
 					newClause(learntClause, true);
 					if (learntClause.size() == 1) {
 						v(learntClause.get(0)).setLevel(0);
 					}
 				}
-				/*System.out.println("decisionLevel: "+decisionLevel() + " rootLevel: " + rootLevel);
+				//System.out.println("learnt clause: " + learntClause);
+				/*System.out.println("decisionLevel: "+decisionLevel() + " numberOfFirstDecisions: " + numberOfFirstDecisions);
 				for (int i = 0; i < vars.size(); i++) {
 					MSJVariable v = vars.get(i);
 					System.out.println(i + "\t" + v + " level: " + v.level() + " reason: " + v.reason() + " polarity: "+v.polarity());
@@ -331,9 +332,10 @@ public class ModifiedMSJCoreProver {
 				}
 			} else {
 				if (nof_conflicts >= 0 && conflCount >= nof_conflicts) {
-					cancelUntil(0);
+					cancelUntil(rootLevel, true);
 					return LBool.UNDEF;
 				}
+				
 				if (decisionLevel() == 0) {
 					simplifyDB();
 				}
@@ -344,22 +346,25 @@ public class ModifiedMSJCoreProver {
 				if (stats.decisions % params.var_decay_rate == 0) {
 					decayVarActivity();
 				}
-				// searches next variable to set (test false first)
+				
+				// searches next variable to set (test TRUE first)
 				int next = pickBranchLit();
 				if (next == -1) {
 					for (int i = 0; i < vars.size(); i++)
 						model.push(vars.get(i).assignment());
-					cancelUntil(0);
+					cancelUntil(rootLevel);
 					return LBool.TRUE;
 				}
+				//System.out.println("vor assume");
 				assume(next);
 			}
 		}
 	}
 
-	protected MSJClause propagate() {
+	protected MSJClause propagate() throws InterruptedException {
 		MSJClause confl = null;
 		while (qhead < trail.size()) {
+			Thread.sleep(0); // to handle interrupts
 			stats.propagations++;
 			stats.simpDBProps--;
 			int propLit = trail.get(qhead++);
@@ -426,8 +431,6 @@ public class ModifiedMSJCoreProver {
 		return confl;
 	}
 
-	private IVec<MSJVariable> analyzeVars = null;
-
 	/**
 	 * Calculates the backtracklevel
 	 * 
@@ -438,7 +441,6 @@ public class ModifiedMSJCoreProver {
 	 * @return
 	 */
 	protected int analyze(MSJClause conflictClause, IntVec learntVec) {
-		analyzeVars = new Vec<MSJVariable>();
 		MSJClause confl = conflictClause;
 		int pathCounter = 0;
 		int conflictLit = litUndef;
@@ -464,10 +466,6 @@ public class ModifiedMSJCoreProver {
 					if (varLevel == decisionLevel()) {
 						pathCounter++;
 					} else {
-						if (varLevel < rootLevel) {
-							analyzeVars.push(variable);
-							//System.out.println("Variable: " + variable);
-						}
 						learntVec.push(q);
 						backtrackLevel = backtrackLevel > varLevel ? backtrackLevel
 								: varLevel;
@@ -610,22 +608,26 @@ public class ModifiedMSJCoreProver {
 			}
 		}
 	}
-
+	
 	protected void cancelUntil(int level) {
+		cancelUntil(level, false);
+	}
+
+	protected void cancelUntil(int level, boolean resetPolarity) {
 		if (decisionLevel() > level) {
 			for (int c = trail.size() - 1; c >= trailLimits.get(level); c--) {
 				MSJVariable var = v(trail.get(c));
 				var.assign(LBool.UNDEF);
-				if (isAssumptionVar.get(var.num())) {
-					if (var.reason() == null) {
+				if (isFirstDecisionVar.get(var.num())) {
+					if (!resetPolarity && var.reason() == null) {
 						var.setPolarity(sign(trail.get(c)));
 					} else {
 						var.setPolarity(false);
 					}
 					
-					assumptionLevel--;
-					if (assumptionVarHeap.find(var) == -1) {
-						assumptionVarHeap.insert(var);
+					currentFirstDecisions--;
+					if (firstDecisionsVarHeap.find(var) == -1) {
+						firstDecisionsVarHeap.insert(var);
 					}
 				} else {
 					var.setPolarity(sign(trail.get(c)));
@@ -642,14 +644,15 @@ public class ModifiedMSJCoreProver {
 	}
 
 	private int pickBranchLit() {
-		if (rootLevel != 0 && assumptionLevel < rootLevel) {
-			while (!assumptionVarHeap.isEmpty()) {
-				MSJVariable next = assumptionVarHeap.heapExtractMax();
+		//System.out.println("decisionLevel: "+ decisionLevel() + " numberOfFirstDecisions: " + numberOfFirstDecisions + " assumptionLevel: " + assumptionLevel);
+		if (maxFirstDecisions != 0 && currentFirstDecisions < maxFirstDecisions) {
+			while (!firstDecisionsVarHeap.isEmpty()) {
+				MSJVariable next = firstDecisionsVarHeap.heapExtractMax();
 				if (next.assignment() == LBool.UNDEF) {
 					return mkLit(next.num(), next.polarity());
 				}
 			}
-			throw new AssertionError("should not happen: assumptionLevel <= rootLevel but all vars are defined");
+			throw new AssertionError("should not happen: currentFirstDecisions <= maxFirstDecisions but all vars are defined");
 		} else {
 			while (!varHeap.isEmpty()) {
 				MSJVariable next = varHeap.heapExtractMax();
@@ -664,6 +667,7 @@ public class ModifiedMSJCoreProver {
 
 	protected boolean assume(int lit) {
 		trailLimits.push(trail.size());
+		//System.out.println("assume var " + v(lit) + " level: " + decisionLevel() + " to: " + sign(lit));
 		return enqueue(lit, null);
 	}
 
@@ -676,10 +680,10 @@ public class ModifiedMSJCoreProver {
 			var.setLevel(decisionLevel());
 			var.setReason(reason);
 			trail.push(lit);
-			if (isAssumptionVar.get(var(lit))) {
-				assumptionLevel++;
+			if (isFirstDecisionVar.get(var(lit))) {
+				currentFirstDecisions++;
 			}
-			System.out.println("set var " + var + " level: " + decisionLevel() + " assumptionLevel: " + assumptionLevel + " reason: " + reason);
+			//System.out.println("set var " + var + " level: " + decisionLevel() + " currentFD: " + currentFirstDecisions + " reason: " + reason);
 			return true;
 		}
 	}
@@ -707,7 +711,7 @@ public class ModifiedMSJCoreProver {
 		learnts.shrink(i - j);
 	}
 
-	private void simplifyDB() {
+	private void simplifyDB() throws InterruptedException {
 		if (!ok) {
 			return;
 		}
@@ -812,7 +816,7 @@ public class ModifiedMSJCoreProver {
 	// ////////////////////////////////
 	// Main entry point for solving //
 	// ////////////////////////////////
-	public boolean solve(IntVec assumps) {
+	public boolean solve(IntVec assumps) throws InterruptedException {
 		if (!firstRun) {
 			for (int i = 0; i < seen.size(); i++) {
 				seen.set(i, false);
@@ -829,8 +833,6 @@ public class ModifiedMSJCoreProver {
 		learntsize_adjust_cnt = (int) learntsize_adjust_confl;
 		LBool status = LBool.UNDEF;
 		rootLevel = assumps.size();
-		assumptions = assumps;
-		/*
 		for (int i = 0; i < assumps.size(); i++) {
 			int p = assumps.get(i);
 			assert (var(p) < vars.size());
@@ -851,7 +853,6 @@ public class ModifiedMSJCoreProver {
 					conflict.clear();
 					conflict.push(not(p));
 				}
-				System.out.println("assumption fails");
 				cancelUntil(0);
 				return false;
 			}
@@ -859,11 +860,10 @@ public class ModifiedMSJCoreProver {
 			if (confl != null) {
 				analyzeFinal(confl, false);
 				assert (conflict.size() > 0);
-				System.out.println("propagation after assumption");
 				cancelUntil(0);
 				return false;
 			}
-		}*/
+		}
 		if (params.log) {
 			System.out
 					.print("===============================[MiniSAT Java]======================\n");
@@ -888,7 +888,7 @@ public class ModifiedMSJCoreProver {
 		return status == LBool.TRUE;
 	}
 
-	public boolean solve() {
+	public boolean solve() throws InterruptedException {
 		IntVec tmp = new IntVec();
 		return solve(tmp);
 	}

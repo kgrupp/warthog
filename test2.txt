@@ -1,0 +1,118 @@
+set var 0FALSE level: 0 assumptionLevel: 0 reason: null
+learnt clause: 1
+set var 817FALSE level: 0 assumptionLevel: 0 reason: null
+learnt clause: 1635
+set var 633TRUE level: 16 assumptionLevel: 0 reason: [1266,629,1327,189,866,98,1080,408,659]
+learnt clause: 1266,866,1327,189,629,98,1080,408,659
+set var 496FALSE level: 1 assumptionLevel: 0 reason: [993,1027,1223,901,1258]
+learnt clause: 993,1027,1223,901,1258
+set var 329FALSE level: 13 assumptionLevel: 0 reason: [659,629,1266,1327,137,1080,84,225]
+learnt clause: 659,137,1266,1327,629,1080,84,225
+set var 97TRUE level: 13 assumptionLevel: 0 reason: [194,970,1327,137,145,84,694]
+learnt clause: 194,145,1327,137,970,84,694
+set var 593TRUE level: 1 assumptionLevel: 0 reason: [439]
+learnt clause: 1186,438
+set var 6TRUE level: 12 assumptionLevel: 0 reason: [12,1327,137,145,84,694,466,851]
+learnt clause: 12,1327,137,145,84,694,466,851
+set var 88TRUE level: 10 assumptionLevel: 0 reason: [176,110,15,644,1631,660,162]
+learnt clause: 176,1631,15,644,110,660,162
+set var 72TRUE level: 0 assumptionLevel: 0 reason: null
+learnt clause: 144
+set var 88TRUE level: 10 assumptionLevel: 0 reason: [176,110,644,15,67,660,162]
+learnt clause: 176,15,644,110,67,660,162
+set var 663TRUE level: 0 assumptionLevel: 0 reason: null
+learnt clause: 1326
+set var 402FALSE level: 10 assumptionLevel: 0 reason: [805,1627,466,694,644,15,67,660,454,408,497,670]
+learnt clause: 805,694,466,1627,644,15,67,660,454,408,497,670
+set var 6TRUE level: 14 assumptionLevel: 0 reason: [12,70,1581]
+learnt clause: 12,1581,70
+set var 400FALSE level: 1 assumptionLevel: 0 reason: [1580]
+learnt clause: 801,1581
+set var 767TRUE level: 35 assumptionLevel: 0 reason: [1534,798,747,629,1080]
+learnt clause: 1534,798,747,629,1080
+set var 329TRUE level: 30 assumptionLevel: 0 reason: [658,1217,680,624,1028]
+learnt clause: 658,1217,680,624,1028
+set var 329FALSE level: 24 assumptionLevel: 0 reason: [659,629,1266,1080]
+learnt clause: 659,1266,629,1080
+set var 474TRUE level: 24 assumptionLevel: 0 reason: [948,658,1258,950]
+learnt clause: 948,658,1258,950
+set var 773FALSE level: 28 assumptionLevel: 0 reason: [1547,417,623,1012,1014,749,766,290]
+learnt clause: 1547,623,417,1012,1014,749,766,290
+set var 299TRUE level: 35 assumptionLevel: 0 reason: [598,973,644,110,257,1631,725,15,623,417,1012,1014,290,93,149,64,11,216,219,202,664,297,425,495,1000]
+learnt clause: 598,15,644,110,257,1631,725,973,623,417,1012,1014,290,93,149,64,11,216,219,202,664,297,425,495,1000
+set var 412FALSE level: 31 assumptionLevel: 0 reason: [825,803,1581]
+learnt clause: 825,1581,803
+set var 534FALSE level: 0 assumptionLevel: 0 reason: null
+learnt clause: 1069
+set var 68TRUE level: 0 assumptionLevel: 0 reason: null
+learnt clause: 136
+set var 376FALSE level: 21 assumptionLevel: 0 reason: [718]
+learnt clause: 753,719
+set var 653TRUE level: 59 assumptionLevel: 0 reason: [1306,1439,752,258,49,796,25,371]
+learnt clause: 1306,752,1439,258,49,796,25,371
+set var 65TRUE level: 23 assumptionLevel: 0 reason: [130,644,15,1464,110]
+learnt clause: 130,15,644,1464,110
+set var 713FALSE level: 31 assumptionLevel: 0 reason: [1427,566,277,943,131,15,1289,67]
+learnt clause: 1427,1289,277,943,131,15,566,67
+set var 653TRUE level: 31 assumptionLevel: 0 reason: [1306,371,1439,752]
+learnt clause: 1306,752,1439,371
+set var 185FALSE level: 30 assumptionLevel: 0 reason: [371,771,1439,258,49,277,943,131,15,1289,67,752]
+learnt clause: 371,752,1439,258,49,277,943,131,15,1289,67,771
+set var 185TRUE level: 25 assumptionLevel: 0 reason: [370,326,1439,752]
+learnt clause: 370,752,1439,326
+set var 471TRUE level: 21 assumptionLevel: 0 reason: [942,973,1631]
+learnt clause: 942,1631,973
+set var 283FALSE level: 24 assumptionLevel: 0 reason: [567,110,644,1464,15]
+learnt clause: 567,15,644,1464,110
+set var 204FALSE level: 24 assumptionLevel: 0 reason: [409,1426,943,1439,277,131,15,1289,67,752]
+learnt clause: 409,1426,943,1439,277,131,15,1289,67,752
+set var 127TRUE level: 21 assumptionLevel: 0 reason: [577]
+learnt clause: 254,576
+set var 322TRUE level: 23 assumptionLevel: 0 reason: [644,110,943,15,1289,67,409,1439,752,277,1464]
+learnt clause: 644,277,943,15,1289,67,409,1439,752,110,1464
+set var 322FALSE level: 22 assumptionLevel: 0 reason: [645,1439,752]
+learnt clause: 645,752,1439
+set var 55FALSE level: 21 assumptionLevel: 0 reason: [577]
+learnt clause: 111,576
+set var 719FALSE level: 21 assumptionLevel: 0 reason: [1439,943,15,1289,67,409,110,752,277,1464]
+learnt clause: 1439,943,15,1289,67,409,110,752,277,1464
+set var 385TRUE level: 22 assumptionLevel: 0 reason: [1427]
+learnt clause: 770,1426
+set var 185TRUE level: 22 assumptionLevel: 0 reason: [1427]
+learnt clause: 370,1426
+set var 535FALSE level: 30 assumptionLevel: 0 reason: [1512]
+learnt clause: 1071,1513
+set var 158TRUE level: 30 assumptionLevel: 0 reason: [1512]
+learnt clause: 316,1513
+set var 756FALSE level: 25 assumptionLevel: 0 reason: [1513,1539,272]
+learnt clause: 1513,272,1539
+set var 143TRUE level: 22 assumptionLevel: 0 reason: [286,644,15,1464,110]
+learnt clause: 286,15,644,1464,110
+set var 369TRUE level: 25 assumptionLevel: 0 reason: [738,182,623,417,1012,1499,15,644,1464,110,7,94,149,64,851,491,369,596]
+learnt clause: 738,182,623,417,1012,1499,15,644,1464,110,7,94,149,64,851,491,369,596
+set var 575TRUE level: 48 assumptionLevel: 0 reason: [1150,836,417,1012,623,1499,7,94,149,64]
+learnt clause: 1150,623,417,1012,836,1499,7,94,149,64
+set var 503TRUE level: 50 assumptionLevel: 0 reason: [1006,418,1151,369,272,1539,739,491,935]
+learnt clause: 1006,491,1151,369,272,1539,739,418,935
+set var 352FALSE level: 54 assumptionLevel: 0 reason: [705,1063,19,804,187,638,654,1167,529,517,756]
+learnt clause: 705,804,19,1063,187,638,654,1167,529,517,756
+set var 30TRUE level: 22 assumptionLevel: 0 reason: [60,644,15,1464,110]
+learnt clause: 60,15,644,1464,110
+set var 683TRUE level: 26 assumptionLevel: 0 reason: [1366,1151,491,369,272,1539,739]
+learnt clause: 1366,491,1151,369,272,1539,739
+set var 219TRUE level: 27 assumptionLevel: 0 reason: [438,1365,851,673,596,624]
+learnt clause: 438,1365,851,673,596,624
+set var 219FALSE level: 26 assumptionLevel: 0 reason: [1366]
+learnt clause: 439,1367
+set var 219TRUE level: 22 assumptionLevel: 0 reason: [438,644,157,15,513,1464,110,673,596,851,624]
+learnt clause: 438,513,157,15,644,1464,110,673,596,851,624
+set var 416TRUE level: 24 assumptionLevel: 0 reason: [832,1151,491]
+learnt clause: 832,491,1151
+set var 618TRUE level: 24 assumptionLevel: 0 reason: [1236,1422,513,157,596,673]
+learnt clause: 1236,513,1422,157,596,673
+set var 443TRUE level: 54 assumptionLevel: 0 reason: [886,649,1167]
+learnt clause: 886,1167,649
+set var 39TRUE level: 24 assumptionLevel: 0 reason: [1197]
+learnt clause: 78,1196
+set var 443TRUE level: 21 assumptionLevel: 0 reason: [1166]
+learnt clause: 886,1167
