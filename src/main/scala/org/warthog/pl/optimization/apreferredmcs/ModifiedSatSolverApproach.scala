@@ -114,11 +114,6 @@ class ModifiedSatSolverApproach extends APreferredMCSSolver {
   private def getMSJLit(variable: Int, phase: Boolean) = ModifiedMSJCoreProver.mkLit(variable, !phase)
   
   private def internalAddSoft(clause: ClauseLike[PL, PLLiteral], assumptionVar: Int) {
-    // add unit clause
-    /*val unitClause = new IntVec()
-    unitClause.push(getMSJLit(assumptionVar, true))
-    modifiedSatSolver.newClause(unitClause, false)*/
-    
     // add clause with additional assumption var
     val resClause = new IntVec()
     val clauseWithIDs = getIDsWithPhase(clause)

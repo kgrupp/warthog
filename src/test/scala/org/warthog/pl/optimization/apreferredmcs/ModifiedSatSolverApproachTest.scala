@@ -28,13 +28,7 @@ package org.warthog.pl.optimization.apreferredmcs
 import java.io.File
 
 import org.specs2.mutable.Specification
-import org.warthog.generic.datastructures.cnf.ClauseLike
-import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
-import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatAssumption
-import org.warthog.pl.formulas.PL
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
 
 /**
  * Tests linear search
@@ -65,7 +59,7 @@ class ModifiedSatSolverApproachTest extends Specification {
     }
   }
   
-  /*testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None)
+  testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None)
 
   testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()))
   testWCNFDIMACSFile("simple", "f02.wcnf", Some(List()))
@@ -91,12 +85,21 @@ class ModifiedSatSolverApproachTest extends Specification {
   testWCNFDIMACSFile("simple", "threeEmptyClauses.wcnf", None)
 
   testWCNFDIMACSFile("randomVertexCover", "edges00040_vertices00010.wcnf", Some(List(0, 1, 3, 5, 6, 7, 8, 9)))
-  testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))*/
+  testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
   
-  //testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422) // TODO
-  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s11", "huge-r.cnf.wcnf", 118) // TODO
-  /*testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 6)
-  testWCNFDIMACSFile2("simple", "testingMinisatRework1.wcnf", 1)*/
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 6)
+  testWCNFDIMACSFile2("simple", "testingMinisatRework1.wcnf", 1)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s11", "huge-r.cnf.wcnf", 118)
+  /*Some(List(  3,   6,  17,  23,  24,  26,  27,  31,  42,  55,  56,  68,  69,  91,  94,  95, 101, 112, 113, 127, 146, 170, 182, 183, 190, 206, 209, 220, 222, 239, 
+              245, 247, 265, 285, 287, 301, 318, 335, 337, 339, 353, 357, 358, 360, 368, 372, 378, 385, 390, 391, 400, 407, 410, 412, 414, 417, 423, 432, 433, 442, 
+              443, 449, 453, 455, 462, 466, 485, 490, 491, 497, 502, 524, 528, 529, 531, 534, 540, 560, 566, 569, 583, 592, 601, 608, 630, 633, 651, 652, 657, 660, 
+              666, 672, 680, 689, 700, 707, 730, 745, 748, 756, 757, 758, 765, 782, 783, 806, 815, 818, 825, 839, 849, 850, 852, 886, 889, 902, 908, 925))
+   */
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "dme3ptimonegTest.cnf.wcnf", 3)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "dme3ptimonegOrdered.cnf.wcnf", 189)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "dme3ptimoneg.cnf.wcnf", 189)
+  
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
     val solver = new ModifiedSatSolverApproach()
     "File " + fileName should {
@@ -107,7 +110,6 @@ class ModifiedSatSolverApproachTest extends Specification {
         solver.reset()
         solver.addHardConstraint(reader.hardClauses)
         val result = solver.solve(reader.softClauses.toList)
-        println(result)
 
         result.get.size must be equalTo result1
       }

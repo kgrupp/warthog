@@ -66,25 +66,7 @@ class LinearSearchTest extends Specification {
       }
     }
   }
-
-  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422)
-  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 6)
-  testWCNFDIMACSFile2("simple", "testingMinisatRework1.wcnf", 1)
-  private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
-    val solver = new LinearSearch(new MiniSatAssumption())
-    "File " + fileName should {
-      "have " + result1 + " MCS clauses" in {
-        val reader = new PartialWeightedMaxSATReader()
-        reader.read(getFileString(subFolder, fileName))
-
-        solver.reset()
-        solver.addHardConstraint(reader.hardClauses)
-        val result = solver.solve(reader.softClauses.toList)
-
-        result.get.size must be equalTo result1
-      }
-    }
-  }
+  
   testWCNFDIMACSFile("simple", "emptyAndNotEmptyClauses.wcnf", None)
 
   testWCNFDIMACSFile("simple", "f01.wcnf", Some(List()))
@@ -112,4 +94,29 @@ class LinearSearchTest extends Specification {
 
   testWCNFDIMACSFile("randomVertexCover", "edges00040_vertices00010.wcnf", Some(List(0, 1, 3, 5, 6, 7, 8, 9)))
   testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
+  
+  private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
+    val satSolver = new MiniSatJava()
+    val solver = new LinearSearch(satSolver)
+    "File " + fileName should {
+      "have " + result1 + " MCS clauses" in {
+        val reader = new PartialWeightedMaxSATReader()
+        reader.read(getFileString(subFolder, fileName))
+
+        solver.reset()
+        solver.addHardConstraint(reader.hardClauses)
+        val result = solver.solve(reader.softClauses.toList)
+
+        result.get.size must be equalTo result1
+      }
+    }
+  }
+  
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "depots2_ks99i.shuffled-as.sat05-4011.cnf.wcnf", 422)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified2.cnf.wcnf", 6)
+  testWCNFDIMACSFile2("simple", "testingMinisatRework1.wcnf", 1)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s11", "huge-r.cnf.wcnf", 118)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "dme3ptimonegTest.cnf.wcnf", 3)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "dme3ptimonegOrdered.cnf.wcnf", 189)
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "dme3ptimoneg.cnf.wcnf", 189)
 }

@@ -39,15 +39,15 @@ class WeightedDIMACSPrinter {
    *
    * Note: Works only correct, if variable names are represented by integers
    */
-  def print(hardClauses: List[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]]): String = {
+  def printDIMACS(hardClauses: List[ClauseLike[PL, PLLiteral]], softClauses: List[ClauseLike[PL, PLLiteral]]): String = {
 
     var s: StringBuilder = new StringBuilder()
     val hardInt = hardClauses.size + softClauses.size + 1
-    val vars = Set[String]()
+    var vars = Set[String]()
     for (clause <- hardClauses) {
       s ++= hardInt + " "
       for (lit <- clause.literals) {
-        vars.+(lit.variable.toString)
+        vars = vars.+(lit.variable.toString)
         if (lit.phase) {
           s ++= lit.variable + " "
         } else {
@@ -59,7 +59,7 @@ class WeightedDIMACSPrinter {
     for (clause <- softClauses) {
       s ++= "1 "
       for (lit <- clause.literals) {
-        vars.+(lit.variable.toString)
+        vars = vars.+(lit.variable.toString)
         if (lit.phase) {
           s ++= lit.variable + " "
         } else {
@@ -68,7 +68,7 @@ class WeightedDIMACSPrinter {
       }
       s ++= "0\n"
     }
-    "p wcnf " + hardClauses.size + softClauses.size + " " + vars.size + " " + hardInt + "\n" + s.mkString
+    "p wcnf " + hardClauses.size + " " + vars.size + " " + hardInt + "\n" + s.mkString
   }
 
 }

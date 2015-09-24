@@ -262,7 +262,6 @@ public class ModifiedMSJCoreProver {
 	// ///////////////////////
 	private LBool search(int nof_conflicts) throws InterruptedException {
 		if (!ok) {
-			//System.out.println("ok was false");
 			return LBool.FALSE;
 		}
 		//System.out.println("Start SAT solving");
@@ -273,7 +272,7 @@ public class ModifiedMSJCoreProver {
 			Thread.sleep(0); // to handle interrupts
 			MSJClause confl = propagate();
 			if (confl != null) {
-				//System.out.println("KONFLIKT: "+confl);
+				//System.out.println("KONFLIKT: "+confl + "OK = " + ok);
 				stats.conflicts++;
 				conflCount++;
 				IntVec learntClause = new IntVec();
@@ -282,14 +281,10 @@ public class ModifiedMSJCoreProver {
 					return LBool.FALSE;
 				}
 				
-				/*for (int i = 0; i < vars.size(); i++) {
-					MSJVariable v = vars.get(i);
-					System.out.println(i + "\t" + v + " level: " + v.level() + " reason: " + v.reason() + " polarity: "+v.polarity());
-				}*/
-				//System.out.println("decisionLevel: "+decisionLevel() + " currentFD: " + currentFirstDecisions + " maxFD: " + maxFirstDecisions);
 				if (currentFirstDecisions < maxFirstDecisions) {
-					analyze(confl, learntClause);
-					cancelUntil(decisionLevel() - 1);
+					int backtrackLevel = analyze(confl, learntClause);
+					cancelUntil(backtrackLevel); //decisionLevel() - 1);
+					//System.out.println("limited backtracking new clause: " + learntClause + " to level: " + backtrackLevel);
 					newClause(learntClause, true);
 					if (learntClause.size() == 1) {
 						v(learntClause.get(0)).setLevel(0);
@@ -299,19 +294,12 @@ public class ModifiedMSJCoreProver {
 					int backtrackLevel = analyze(confl, learntClause);
 					cancelUntil(backtrackLevel > rootLevel ? backtrackLevel
 							: rootLevel);
+					//System.out.println("normal backtracking new clause: " + learntClause + " to level: " + backtrackLevel);
 					newClause(learntClause, true);
 					if (learntClause.size() == 1) {
 						v(learntClause.get(0)).setLevel(0);
 					}
 				}
-				//System.out.println("learnt clause: " + learntClause);
-				/*System.out.println("decisionLevel: "+decisionLevel() + " numberOfFirstDecisions: " + numberOfFirstDecisions);
-				for (int i = 0; i < vars.size(); i++) {
-					MSJVariable v = vars.get(i);
-					System.out.println(i + "\t" + v + " level: " + v.level() + " reason: " + v.reason() + " polarity: "+v.polarity());
-				}
-				System.out.println("nextLit: "+v(pickBranchLit()));*/
-				//if (true) throw new AssertionError();
 				claDecayActivity();
 				if (--learntsize_adjust_cnt == 0) {
 					learntsize_adjust_confl *= learntsize_adjust_inc;
@@ -355,7 +343,6 @@ public class ModifiedMSJCoreProver {
 					cancelUntil(rootLevel);
 					return LBool.TRUE;
 				}
-				//System.out.println("vor assume");
 				assume(next);
 			}
 		}
@@ -441,6 +428,9 @@ public class ModifiedMSJCoreProver {
 	 * @return
 	 */
 	protected int analyze(MSJClause conflictClause, IntVec learntVec) {
+		if (!ok) {
+			throw new AssertionError("SAT false");
+		}
 		MSJClause confl = conflictClause;
 		int pathCounter = 0;
 		int conflictLit = litUndef;
@@ -469,12 +459,10 @@ public class ModifiedMSJCoreProver {
 						learntVec.push(q);
 						backtrackLevel = backtrackLevel > varLevel ? backtrackLevel
 								: varLevel;
-						//System.out.println("Var: " + variable + " "+ backtrackLevel);
 					}
 				}
 			}
-			while (!seen.get(var(trail.get(index--))))
-				;
+			while (!seen.get(var(trail.get(index--))));
 			conflictLit = trail.get(index + 1);
 			confl = v(conflictLit).reason();
 			seen.set(var(conflictLit), false);
@@ -617,25 +605,27 @@ public class ModifiedMSJCoreProver {
 		if (decisionLevel() > level) {
 			for (int c = trail.size() - 1; c >= trailLimits.get(level); c--) {
 				MSJVariable var = v(trail.get(c));
-				var.assign(LBool.UNDEF);
-				if (isFirstDecisionVar.get(var.num())) {
-					if (!resetPolarity && var.reason() == null) {
-						var.setPolarity(sign(trail.get(c)));
+				if (var.level() != 0) {
+					var.assign(LBool.UNDEF);
+					if (isFirstDecisionVar.get(var.num())) {
+						if (!resetPolarity && var.reason() == null) {
+							var.setPolarity(sign(trail.get(c)));
+						} else {
+							var.setPolarity(false);
+						}
+						
+						currentFirstDecisions--;
+						if (firstDecisionsVarHeap.find(var) == -1) {
+							firstDecisionsVarHeap.insert(var);
+						}
 					} else {
-						var.setPolarity(false);
+						var.setPolarity(sign(trail.get(c)));
+						if (varHeap.find(var) == -1) {
+							varHeap.insert(var);
+						}
 					}
-					
-					currentFirstDecisions--;
-					if (firstDecisionsVarHeap.find(var) == -1) {
-						firstDecisionsVarHeap.insert(var);
-					}
-				} else {
-					var.setPolarity(sign(trail.get(c)));
-					if (varHeap.find(var) == -1) {
-						varHeap.insert(var);
-					}
+					var.setReason(null);
 				}
-				var.setReason(null);
 			}
 			trail.shrink(trail.size() - trailLimits.get(level));
 			trailLimits.shrink(trailLimits.size() - level);
@@ -644,7 +634,6 @@ public class ModifiedMSJCoreProver {
 	}
 
 	private int pickBranchLit() {
-		//System.out.println("decisionLevel: "+ decisionLevel() + " numberOfFirstDecisions: " + numberOfFirstDecisions + " assumptionLevel: " + assumptionLevel);
 		if (maxFirstDecisions != 0 && currentFirstDecisions < maxFirstDecisions) {
 			while (!firstDecisionsVarHeap.isEmpty()) {
 				MSJVariable next = firstDecisionsVarHeap.heapExtractMax();
@@ -667,7 +656,6 @@ public class ModifiedMSJCoreProver {
 
 	protected boolean assume(int lit) {
 		trailLimits.push(trail.size());
-		//System.out.println("assume var " + v(lit) + " level: " + decisionLevel() + " to: " + sign(lit));
 		return enqueue(lit, null);
 	}
 
