@@ -248,7 +248,7 @@ public class MSJCoreProver {
 	// ///////////////////////
 	// Main CDCL functions //
 	// ///////////////////////
-	private LBool search(int nof_conflicts) {
+	private LBool search(int nof_conflicts) throws InterruptedException {
 		if (!ok) {
 			return LBool.FALSE;
 		}
@@ -256,6 +256,7 @@ public class MSJCoreProver {
 		int conflCount = 0;
 		model.clear();
 		while (true) {
+			Thread.sleep(0); // to handle interrupts
 			MSJClause confl = propagate();
 			if (confl != null) {
 				stats.conflicts++;
@@ -305,7 +306,7 @@ public class MSJCoreProver {
 				if (stats.decisions % params.var_decay_rate == 0) {
 					decayVarActivity();
 				}
-				// searches next variable to set (test false first)
+				// searches next variable to set (test TRUE first)
 				int next = pickBranchLit();
 				if (next == -1) {
 					for (int i = 0; i < vars.size(); i++)
@@ -318,9 +319,10 @@ public class MSJCoreProver {
 		}
 	}
 
-	protected MSJClause propagate() {
+	protected MSJClause propagate() throws InterruptedException {
 		MSJClause confl = null;
 		while (qhead < trail.size()) {
+			Thread.sleep(0); // to handle interrupts
 			stats.propagations++;
 			stats.simpDBProps--;
 			int propLit = trail.get(qhead++);
@@ -414,20 +416,20 @@ public class MSJCoreProver {
 			}
 			for (int j = (conflictLit == litUndef) ? 0 : 1; j < c.size(); j++) {
 				int q = c.get(j);
-				if (!seen.get(var(q)) && v(q).level() > 0) {
-					v(q).bumpActivity();
+				MSJVariable variable = v(q);
+				if (!seen.get(var(q)) && variable.level() > 0) {
+					variable.bumpActivity();
 					seen.set(var(q), true);
-					if (v(q).level() == decisionLevel()) {
+					if (variable.level() == decisionLevel()) {
 						pathCounter++;
 					} else {
 						learntVec.push(q);
-						backtrackLevel = backtrackLevel > v(q).level() ? backtrackLevel
-								: v(q).level();
+						backtrackLevel = backtrackLevel > variable.level() ? backtrackLevel
+								: variable.level();
 					}
 				}
 			}
-			while (!seen.get(var(trail.get(index--))))
-				;
+			while (!seen.get(var(trail.get(index--))));
 			conflictLit = trail.get(index + 1);
 			confl = v(conflictLit).reason();
 			seen.set(var(conflictLit), false);
@@ -630,7 +632,7 @@ public class MSJCoreProver {
 		learnts.shrink(i - j);
 	}
 
-	private void simplifyDB() {
+	private void simplifyDB() throws InterruptedException {
 		if (!ok) {
 			return;
 		}
@@ -735,7 +737,7 @@ public class MSJCoreProver {
 	// ////////////////////////////////
 	// Main entry point for solving //
 	// ////////////////////////////////
-	public boolean solve(IntVec assumps) {
+	public boolean solve(IntVec assumps) throws InterruptedException {
 		if (!firstRun) {
 			for (int i = 0; i < seen.size(); i++) {
 				seen.set(i, false);
@@ -807,7 +809,7 @@ public class MSJCoreProver {
 		return status == LBool.TRUE;
 	}
 
-	public boolean solve() {
+	public boolean solve() throws InterruptedException {
 		IntVec tmp = new IntVec();
 		return solve(tmp);
 	}
@@ -829,12 +831,12 @@ public class MSJCoreProver {
 		for (int i = 0; i < vars.size(); i++) {
 			LBool state = model.get(i);
 			if (LBool.UNDEF != state) {
-				set.add(MSJCoreProver.mkLit(i, !(LBool.TRUE == state)));
+				set.add(mkLit(i, !(LBool.TRUE == state)));
 			}
 		}
 		return set;
 	}
-	
+
 	public LBool getVarState(int variable) {
 		return model.get(variable);
 	}

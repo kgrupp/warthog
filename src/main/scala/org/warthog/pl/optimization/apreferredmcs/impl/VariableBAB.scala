@@ -26,11 +26,12 @@
 package org.warthog.pl.optimization.apreferredmcs.impl
 
 import org.warthog.pl.formulas.PLAtom
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.ComparableWithIndex;
 
 /**
  * @author Konstantin Grupp
  */
-class VariableBAB(orginalVariable: PLAtom, id: Int) {
+class VariableBAB(orginalVariable: PLAtom, id: Int) extends ComparableWithIndex[VariableBAB] {
 
   private var decisionLevel = -1
   private var varState = VarState.UNDEF
@@ -40,7 +41,6 @@ class VariableBAB(orginalVariable: PLAtom, id: Int) {
 
   def assign(state: VarState) {
     varState = state
-    // TODO
   }
 
   def setLevel(level: Int) {
@@ -49,9 +49,39 @@ class VariableBAB(orginalVariable: PLAtom, id: Int) {
 
   def assignment() = varState
 
-  def getPolarity(): Boolean = polarity
-
   override def toString() =
     "Var { id: " + id + ", orginal: " + orginalVariable + ", level: " + decisionLevel + ", varState: " + varState.toString + "}"
+    
+  /*
+   * Code for ComparableWithIndex (Heap usage)
+   */
+  
+  private var indexVar = 0
+    
+  override def index() = indexVar
+
+  override def setIndex(i: Int) {
+    indexVar = i
+  }
+  
+  override def compareTo(variable: VariableBAB) = activity - variable.activity
+  
+  /*
+   * Activities
+   */
+  
+  private var activity = 0
+  
+    def setActivity(act: Int) {
+    activity = act
+  }
+  
+  def bumpActivity(value: Int = 1) {
+    activity += value
+  }
+
+  def decayActivity(varRescale: Int) {
+    activity /= varRescale
+  }
 
 }

@@ -25,19 +25,24 @@
 
 package org.warthog.pl.optimization.apreferredmcs
 
+import scala.collection.mutable.{ Map => MutableMap }
+import scala.util.control.Breaks.break
+import scala.util.control.Breaks.breakable
+
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.decisionprocedures.satsolver.Solver
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.IVec
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.Vec
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.HeapWithIndex;
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.stats.SearchParams;
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.formulas.PLAtom
-import scala.util.control.Breaks.{ break, breakable }
-import collection.mutable.{ Map => MutableMap }
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.{ Vec, IVec }
-import org.warthog.pl.optimization.apreferredmcs.impl.ClauseBAB
-import org.warthog.pl.optimization.apreferredmcs.impl.VariableBAB
 import org.warthog.pl.optimization.apreferredmcs.impl.BABUtil
-import org.warthog.pl.optimization.apreferredmcs.impl.VarState
+import org.warthog.pl.optimization.apreferredmcs.impl.ClauseBAB
 import org.warthog.pl.optimization.apreferredmcs.impl.TimeUsed
+import org.warthog.pl.optimization.apreferredmcs.impl.VarState
+import org.warthog.pl.optimization.apreferredmcs.impl.VariableBAB
 
 /**
  * @author Konstantin Grupp
@@ -58,7 +63,6 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     varToID.clear
     vars.clear
     watches.clear
-    initialVarStack = List()
 
     qhead = 0
     trail.clear
@@ -104,7 +108,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       }
     }
 
-    val resultVec = adoptedBranchAndBound(softClausesInt, emptySoftClauses, upperBound, initialVarStack)
+    val resultVec = adoptedBranchAndBound(softClausesInt, emptySoftClauses, upperBound)
     if (!resultVec.isEmpty) {
       var result = List[Int]()
       for (i <- resultVec.size - 1 to 0 by -1) {
@@ -120,8 +124,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
 
   private def adoptedBranchAndBound(softClauses: Vec[Int],
                                     softClausesEmpty: Vec[Int],
-                                    upperBound: Vec[Int],
-                                    varStack: List[VariableBAB]): Vec[Int] = {
+                                    upperBound: Vec[Int]): Vec[Int] = {
     Thread.sleep(0) // to handle interrupts
     //myPrintln("adoptedBranchAndBound1:" + hardClauses.size + " " + hardClausesEmpty.size + " " + softClauses.size + " " + softClausesEmpty.size + " " + upperBound.size + " " + varStack.size)
     //myPrintln("adoptedBranchAndBound:\n\t\t" + /*hardClauses + "\n\t\t" + hardClausesEmpty + "\n\t\t" + */softClauses + "\n\t\t" + softClausesEmpty/* + "\n\t\t" + upperBound + "\n\t\t" + varStack*/)
@@ -144,7 +147,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       return upperBound
     }
     tUantilex.end()
-    val (x, newVarStack) = pickNextVar(varStack)
+    val x = pickNextVar()
     //myPrintln("newAssumptionVar: " + x + " on decisionLevel " + decisionLevel)
     //myPrintln(varStack.toString)
     if (x == -1) {
@@ -152,11 +155,19 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       return softClausesSimpEmpty
     }
     val currentLevel = decisionLevel
+    statsDecisions += 1
+    if (statsDecisions % params.var_decay_rate == 0) {
+      decayVarActivity()
+    }
     if (!assume(BABUtil.mkLit(x, false))) {
       return throw new AssertionError("already assigned other way")
     }
-    val resultPos = adoptedBranchAndBound(softClausesSimp, softClausesSimpEmpty, upperBound, newVarStack)
+    val resultPos = adoptedBranchAndBound(softClausesSimp, softClausesSimpEmpty, upperBound)
     cancelUntil(currentLevel)
+    statsDecisions += 1
+    if (statsDecisions % params.var_decay_rate == 0) {
+      decayVarActivity()
+    }
     if (!assume(BABUtil.mkLit(x, true))) {
       return throw new AssertionError("already assigned other way")
     }
@@ -164,7 +175,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     tUantilex.start()
     if (antilex(resultPos, upperBound)) newUpperBound = resultPos
     tUantilex.end()
-    val resultNeg = adoptedBranchAndBound(softClausesSimp, softClausesSimpEmpty, newUpperBound, newVarStack)
+    val resultNeg = adoptedBranchAndBound(softClausesSimp, softClausesSimpEmpty, newUpperBound)
     //myPrintln("bounds:\n\t\t" + resultPos + "\n\t\t" + resultNeg + "\n\t\t" + upperBound, true)
     tUantilex.start()
     if (antilex(resultNeg, newUpperBound)) {
@@ -212,6 +223,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
               //myPrintln("found soft empty clause: " + unitClause)
               // TODO avoid to add clauses 2 times in some cases
               emptyNewSoft = unitClause.getID :: emptyNewSoft
+              getVar(unitClause.lit()).bumpActivity(5)
               watchers.set(j, watchers.get(i))
               i += 1
               j += 1
@@ -268,6 +280,9 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
                   //myPrintln("found soft empty clause: " + c)
                   // TODO avoid to add clauses 2 times in some cases
                   emptyNewSoft = c.getID :: emptyNewSoft
+                  for (i <- 0 to c.size()-1) {
+                    getVar(c.get(i)).bumpActivity(5)
+                  }
                 }
               }
             } // found new watch -> not empty but still false
@@ -420,8 +435,10 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
   private val varToID: MutableMap[PLAtom, Int] = MutableMap()
   private val vars: IVec[VariableBAB] = new Vec()
   private val watches: IVec[IVec[ClauseBAB]] = new Vec()
-  // TODO to improve performance use heap with var activity
-  private var initialVarStack: List[VariableBAB] = List()
+  // to improve performance use heap with var activity
+  private val varHeap: HeapWithIndex[VariableBAB] = new HeapWithIndex[VariableBAB]
+  private val params: SearchParams = new SearchParams()
+  private var statsDecisions: Long = 0
 
   private var qhead: Int = 0
   private var trail: IVec[Int] = new Vec()
@@ -481,7 +498,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     val newVar = new VariableBAB(variable, id)
     varToID += (variable -> id)
     vars.push(newVar)
-    initialVarStack = newVar :: initialVarStack
+    varHeap.insert(newVar);
     watches.push(new Vec())
     watches.push(new Vec())
     id
@@ -493,8 +510,9 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     for (lit <- clause.literals) {
       val variable = varToID.getOrElseUpdate(lit.variable, newVar(lit.variable))
       workingClause(i) = BABUtil.mkLit(variable, !lit.phase)
-      i += 1
+      getVar(workingClause(i)).bumpActivity()
       worker(lit)
+      i += 1
     }
     val newClause = new ClauseBAB(isHard, id, clause, workingClause)
     if (clause.size == 0) {
@@ -543,6 +561,9 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
         val variable = getVar(trail.get(c))
         variable.assign(VarState.UNDEF)
         variable.setLevel(-1)
+        if (varHeap.find(variable) == -1) {
+          varHeap.insert(variable);
+        }
         //myPrintln(variable)
       }
       trail.shrink(trail.size() - trailLimits.get(level))
@@ -556,16 +577,14 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
   /**
    * Similar to pickBranchLit
    */
-  private def pickNextVar(varStack: List[VariableBAB]): (Int, List[VariableBAB]) = {
-    var temp = varStack
-    while (!temp.isEmpty) {
-      val next = temp.head
+  private def pickNextVar(): Int = {
+    while (!varHeap.isEmpty()) {
+      val next = varHeap.heapExtractMax
       if (next.assignment() == VarState.UNDEF) {
-        return (next.getID, temp.tail)
+        return next.getID()
       }
-      temp = temp.tail
     }
-    return (-1, List())
+    -1
   }
 
   /**
@@ -574,6 +593,14 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
    * *********
    */
 
+  private def decayVarActivity() {
+    for (i <- 1 to vars.size()-1) {
+      val variable = vars.get(i)
+      variable.decayActivity(params.var_decay)
+    }
+    varHeap.restoreHeapProperty();
+  }
+  
   private def decisionLevel() = trailLimits.size
 
   private def getVar(lit: Int) = vars.get(BABUtil.toVar(lit))
