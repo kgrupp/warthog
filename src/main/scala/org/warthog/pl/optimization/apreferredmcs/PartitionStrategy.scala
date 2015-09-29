@@ -31,21 +31,25 @@ import org.warthog.pl.optimization.apreferredmcs.impl.PartitionMaker
  * @author Konstantin Grupp
  */
 object PartitionStrategy {
-  
-  def constant(k: Int) = new PartitionMaker(k.toString, (_,_) => k)
-  
-  def hierarchized(a: Int, b: Int, c: Int) = new PartitionMaker(a + "-" + b + "-" + c, 
-      (recursionDepth,_) => recursionDepth match {
-        case 1 => a
-        case 2 => b
-        case _ => c
-      })
-  
-  def maxSize(max: Int, minBlocks: Int) = new PartitionMaker("maxSize-" + max + "-" + minBlocks, 
-      (recursionDepth,size) => {
-        val k = size / max
-        if (k < minBlocks) minBlocks
-        else k
-      })
-  
+
+  def linearSearch() = new PartitionMaker("linearSearch", (_, size) => size)
+
+  def fastDiag() = new PartitionMaker("fastDiag", (_, _) => 2)
+
+  def constant(k: Int) = new PartitionMaker(k.toString, (_, _) => k)
+
+  def hierarchized(a: Int, b: Int, c: Int) = new PartitionMaker(a + "-" + b + "-" + c,
+    (recursionDepth, _) => recursionDepth match {
+      case 1 => a
+      case 2 => b
+      case _ => c
+    })
+
+  def maxSize(max: Int, minBlocks: Int) = new PartitionMaker("maxSize-" + max + "-" + minBlocks,
+    (recursionDepth, size) => {
+      val k = size / max
+      if (k < minBlocks) minBlocks
+      else k
+    })
+
 }
