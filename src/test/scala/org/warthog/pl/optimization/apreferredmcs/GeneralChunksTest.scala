@@ -25,15 +25,15 @@
 
 package org.warthog.pl.optimization.apreferredmcs
 
-import org.specs2.mutable.Specification
 import java.io.File
-import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
-import org.warthog.pl.optimization.maxsat.MaxSATHelper
+
+import org.specs2.mutable.Specification
 import org.warthog.generic.datastructures.cnf.ClauseLike
-import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause, PLLiteral }
+import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.optimization.apreferredmcs.impl.PartitionMaker
+import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
 
 /**
  * Tests general chunks algorithm
@@ -97,4 +97,23 @@ class GeneralChunksTest extends Specification {
 
   testWCNFDIMACSFile("randomVertexCover", "edges00040_vertices00010.wcnf", Some(List(0, 1, 3, 5, 6, 7, 8, 9)))
   testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
+  
+  private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
+    val satSolver = new MiniSatJava()
+    val solver = new GeneralChunks(satSolver, PartitionStrategy.constant(10), true, false, true)
+    "File " + fileName should {
+      "have " + result1 + " MCS clauses" in {
+        val reader = new PartialWeightedMaxSATReader()
+        reader.read(getFileString(subFolder, fileName))
+
+        solver.reset()
+        solver.addHardConstraint(reader.hardClauses)
+        val result = solver.solve(reader.softClauses.toList)
+        
+        result.get.size must be equalTo result1
+      }
+    }
+  }
+  
+  testWCNFDIMACSFile2("ijcai13-bench" + fs + "mm-s12", "a620test0100-modified.cnf.wcnf", 14)
 }

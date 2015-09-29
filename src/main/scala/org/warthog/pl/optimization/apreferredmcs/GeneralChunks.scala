@@ -139,7 +139,7 @@ class GeneralChunks(satSolver: Solver, partitionMaker: PartitionMaker, useModelE
         areSubCallsSAT &&= result._1
         skip = result._2
       }
-      (areSubCallsSAT, skip)
+      (areSubCallsSAT, tempPartitionMaker.recursiveSkip(skip))
     }
   }
 
