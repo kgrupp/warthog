@@ -52,7 +52,8 @@ class GeneralChunksTest extends Specification {
     val solverLis = List(new GeneralChunks(new MiniSatJava(), partitionMaker), 
                          new GeneralChunks(new MiniSatJava(), partitionMaker, true, true, useAssumeUNSAT), 
                          new GeneralChunks(new MiniSatJava(), partitionMaker, false, true, useAssumeUNSAT),
-                         new GeneralChunks(new MiniSatJava(), PartitionStrategy.maxSize(4, 2), true, false, useAssumeUNSAT))
+                         new GeneralChunks(new MiniSatJava(), PartitionStrategy.maxSize(4), true, false, useAssumeUNSAT),
+                         new GeneralChunks(new MiniSatJava(), PartitionStrategy.maxSizeHierachized(6, 2), true, false, useAssumeUNSAT))
     for (solver <- solverLis) {
       val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
       "File " + fileName + " with " + solver.name should {

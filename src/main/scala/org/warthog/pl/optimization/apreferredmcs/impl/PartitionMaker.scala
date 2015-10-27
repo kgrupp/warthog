@@ -41,7 +41,7 @@ class PartitionMaker(strategyName: String, calcNumPartitions: (Int, Int) => Int)
   def initialize(s: Int, e: Int, recDepth: Int) {
     end = e
     currentStart = s
-    remaining = calcNumPartitions(recDepth, end - currentStart)
+    remaining = calcNumPartitions(recDepth, end - currentStart + 1)
   }
 
   def hasNext(skip: Int = 0) = currentStart + skip <= end

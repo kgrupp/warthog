@@ -45,11 +45,26 @@ object PartitionStrategy {
       case _ => c
     })
 
-  def maxSize(max: Int, minBlocks: Int) = new PartitionMaker("maxSize-" + max + "-" + minBlocks,
-    (recursionDepth, size) => {
+  def maxSize(max: Int) = new PartitionMaker("maxSize-" + max,
+    (_, size) => {
       val k = size / max
-      if (k < minBlocks) minBlocks
+      if (k < 2) 2
       else k
+    })
+
+  def maxSizeHierachized(max1: Int, max2: Int) = new PartitionMaker("maxSizeHierarchized-" + max1 + "-" + max2,
+    (recursionDepth, size) => recursionDepth match {
+      case 1 => {
+        val k = size / max1
+        if (k < 2) 2
+        else k
+      }
+      case 2 => {
+        val k = size / max2
+        if (k < 2) 2
+        else k
+      }
+      case _ => size
     })
 
 }
