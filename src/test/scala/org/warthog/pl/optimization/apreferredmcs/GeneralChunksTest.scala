@@ -30,7 +30,7 @@ import java.io.File
 import org.specs2.mutable.Specification
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatAssumption
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.optimization.apreferredmcs.impl.PartitionMaker
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
@@ -49,11 +49,11 @@ class GeneralChunksTest extends Specification {
 
   private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[List[Int]], useAssumeUNSAT: Boolean = true) {
     val partitionMaker = PartitionStrategy.constant(4)
-    val solverLis = List(new GeneralChunks(new MiniSatJava(), partitionMaker), 
-                         new GeneralChunks(new MiniSatJava(), partitionMaker, true, true, useAssumeUNSAT), 
-                         new GeneralChunks(new MiniSatJava(), partitionMaker, false, true, useAssumeUNSAT),
-                         new GeneralChunks(new MiniSatJava(), PartitionStrategy.maxSize(4), true, false, useAssumeUNSAT),
-                         new GeneralChunks(new MiniSatJava(), PartitionStrategy.maxSizeHierachized(6, 2), true, false, useAssumeUNSAT))
+    val solverLis = List(new GeneralChunks(new MiniSatAssumption(), partitionMaker), 
+                         new GeneralChunks(new MiniSatAssumption(), partitionMaker, true, true, useAssumeUNSAT), 
+                         new GeneralChunks(new MiniSatAssumption(), partitionMaker, false, true, useAssumeUNSAT),
+                         new GeneralChunks(new MiniSatAssumption(), PartitionStrategy.maxSize(4), true, false, useAssumeUNSAT),
+                         new GeneralChunks(new MiniSatAssumption(), PartitionStrategy.maxSizeHierachized(6, 2), true, false, useAssumeUNSAT))
     for (solver <- solverLis) {
       val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
       "File " + fileName + " with " + solver.name should {
@@ -100,7 +100,7 @@ class GeneralChunksTest extends Specification {
   testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
   
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
-    val satSolver = new MiniSatJava()
+    val satSolver = new MiniSatAssumption()
     val solver = new GeneralChunks(satSolver, PartitionStrategy.constant(10), true, false, true)
     "File " + fileName should {
       "have " + result1 + " MCS clauses" in {

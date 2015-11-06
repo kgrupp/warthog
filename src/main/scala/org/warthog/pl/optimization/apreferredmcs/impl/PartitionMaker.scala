@@ -69,7 +69,7 @@ class PartitionMaker(strategyName: String, calcNumPartitions: (Int, Int) => Int)
   
   def recursiveSkip(skip: Int) = {
     if (currentStart < end && end < currentStart + skip) {
-      currentStart + skip - end
+      currentStart + skip - end - 1
     } else {
       0
     }
