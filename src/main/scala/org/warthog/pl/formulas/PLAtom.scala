@@ -40,4 +40,7 @@ case class PLAtom(name: String) extends Formula[PL] with Atom[PL] with Variable[
   def vars = List(this.asInstanceOf[Variable[PL]])
 
   def numOfNodes = 1
+  
+  override def hashCode() = name.hashCode()
+  
 }

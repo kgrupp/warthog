@@ -68,7 +68,7 @@ class MiniSatAssumptionJavaMaps(callsUntilFullReset: Int, assumptionsUntilFullRe
 
   // no extra init necessary
 
-  override def name = "MinisatAssumption-" + callsUntilFullReset + "-" + assumptionsUntilFullReset
+  override def name = "MinisatAssumptionJavaMaps-" + callsUntilFullReset + "-" + assumptionsUntilFullReset
 
   override def reset() {
     assumptions.clear()
