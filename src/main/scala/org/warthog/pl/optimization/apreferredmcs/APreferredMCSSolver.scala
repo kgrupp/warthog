@@ -34,7 +34,7 @@ import org.warthog.pl.transformations.CNFUtil
 import org.warthog.pl.optimization.apreferredmcs.impl.TimeUsed
 
 /**
- * Common interface for APreferred MCS MaxSAT solvers.
+ * Common interface for APreferred MCS solvers.
  *
  * @author Konstantin Grupp
  */

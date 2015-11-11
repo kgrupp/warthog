@@ -46,7 +46,7 @@ import scala.util.control.Breaks.{ break, breakable }
  */
 class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int) extends Solver {
 
-  def this() = this(50, 100)
+  def this() = this(Int.MaxValue, Int.MaxValue)
 
   private var miniSatJavaInstance = new MSJCoreProver()
   private val varToID = HashMap[PLAtom, Int]()
@@ -68,7 +68,13 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
 
   // no extra init necessary
 
-  override def name = "MinisatAssumption-" + callsUntilFullReset + "-" + assumptionsUntilFullReset
+  override def name = {
+    var option = callsUntilFullReset + "-" + assumptionsUntilFullReset
+    if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionClauses) {
+      option = "noReset"
+    }
+    "MinisatAssumption-" + option
+  }
 
   override def reset() {
     assumptions.clear()
