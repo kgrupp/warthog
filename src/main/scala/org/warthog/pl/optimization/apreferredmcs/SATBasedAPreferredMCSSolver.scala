@@ -75,27 +75,36 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
   override protected def areHardConstraintsSatisfiable() = sat()
 
   protected def sat(clauses: Traversable[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
-    tUsatAdd.start
-    satSolver.mark
-    var j = 0
-    for (c <- clauses) {
-      if (100 < j) {
-        Thread.sleep(0) // to handle interrupts
-        j = 0
+    if (!clauses.isEmpty) {
+      tUsatAdd.start
+      satSolver.mark
+      var j = 0
+      for (c <- clauses) {
+        if (100 < j) {
+          Thread.sleep(0) // to handle interrupts
+          j = 0
+        }
+        satSolver.add(c)
+        j += 1
       }
-      satSolver.add(c)
-      j += 1
+      tUsatAdd.end
     }
-    tUsatAdd.end
     tUsat.start
     val isSAT = satSolver.sat() == Solver.SAT
     tUsat.end
-    tUsatDel.start
-    satSolver.undo
-    tUsatDel.end
+    if (!clauses.isEmpty) {
+      tUsatDel.start
+      satSolver.undo
+      tUsatDel.end
+    }
     isSAT
   }
 
+  /**
+   * Makes a mark but does not call the undo() operation
+   * 
+   * TODO javadoc
+   */
   protected def sat(clause: ClauseLike[PL, PLLiteral]): Boolean = {
     tUsatAdd.start
     satSolver.mark
@@ -103,9 +112,6 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
     tUsatAdd.end
     tUsat.start
     val isSAT = satSolver.sat() == Solver.SAT
-    tUsat.end
-    tUsat.start
-    satSolver.undo
     tUsat.end
     isSAT
   }

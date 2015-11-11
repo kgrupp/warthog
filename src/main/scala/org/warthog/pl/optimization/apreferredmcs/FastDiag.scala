@@ -47,12 +47,12 @@ class FastDiag(satSolver: Solver, assumeUNSAT: Boolean = false) extends SATBased
     if (assumeUNSAT) a = "-assumeUNSAT"
     "FastDiag" + a
   }
-  
+
   var softClausesAry = Array[ClauseLike[PL, PLLiteral]]()
 
   override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]) = {
     softClausesAry = softClauses.toArray
-    val softClausesInt = (0 to softClauses.size-1).toList
+    val softClausesInt = (0 to softClauses.size - 1).toList
     if (softClauses.isEmpty || (!assumeUNSAT && mySat(softClausesInt))) {
       List()
     } else {
@@ -70,13 +70,19 @@ class FastDiag(satSolver: Solver, assumeUNSAT: Boolean = false) extends SATBased
   private def solveImplHelper(recursion: Int, isRedundant: Boolean, softClauses: List[Int]): List[Int] = {
     Thread.sleep(0) // to handle interrupts
     if (!isRedundant && mySat(softClauses)) {
-      for (cInt <- softClauses) {
-        satSolver.add(softClausesAry(cInt))
-      }
+      tUsatDel.start()
+      satSolver.forgetAllMarks()
+      tUsatDel.end()
       List()
     } else if (softClauses.size == 1) {
+      tUsatDel.start()
+      satSolver.undo()
+      tUsatDel.end()
       softClauses
     } else {
+      tUsatDel.start()
+      satSolver.undo()
+      tUsatDel.end()
       val k: Int = softClauses.size / 2
       val (softClauses1, softClauses2) = softClauses.splitAt(k)
       val d1 = solveImplHelper(recursion + 1, softClauses2.isEmpty, softClauses1)
@@ -101,9 +107,6 @@ class FastDiag(satSolver: Solver, assumeUNSAT: Boolean = false) extends SATBased
     tUsat.start()
     val isSAT = satSolver.sat() == Solver.SAT
     tUsat.end()
-    tUsatDel.start()
-    satSolver.undo()
-    tUsatDel.end()
     isSAT
   }
 

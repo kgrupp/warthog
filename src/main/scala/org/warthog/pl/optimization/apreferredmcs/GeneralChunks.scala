@@ -88,7 +88,8 @@ class GeneralChunks(satSolver: Solver, partitionMaker: PartitionMaker, useModelE
     }
 
     if (isSatisfied) {
-      var gamma: List[ClauseLike[PL, PLLiteral]] = List()
+      
+      var numberOfAdditionalClausesSatisfied = 0
 
       if (useModelExploiting) {
         // restricted model exploiting start
@@ -98,7 +99,8 @@ class GeneralChunks(satSolver: Solver, partitionMaker: PartitionMaker, useModelE
             Thread.sleep(1) // to handle interrupts
             val checkClause = softClausesAry(j)
             if (modelExploiting.isSat(checkClause)) {
-              gamma = checkClause :: gamma
+              satSolver.addHard(checkClause)
+              numberOfAdditionalClausesSatisfied += 1
             } else {
               break
             }
@@ -108,22 +110,15 @@ class GeneralChunks(satSolver: Solver, partitionMaker: PartitionMaker, useModelE
       }
 
       tUsatDel.start
-      satSolver.undo
+      satSolver.forgetAllMarks()
       tUsatDel.end
 
-      for (i <- start to end) {
-        satSolver.add(softClausesAry(i))
-      }
-      if (useModelExploiting) {
-        gamma.foreach(satSolver.add)
-      }
-
-      (true, gamma.size)
+      (true, numberOfAdditionalClausesSatisfied)
     } else if (end == start) {
       delta = start :: delta
       if (useBackbone) {
         for (lit <- softClausesAry(start).literals) {
-          satSolver.add(new ImmutablePLClause(lit.negate))
+          satSolver.addHard(new ImmutablePLClause(lit.negate))
         }
       }
       (false, 0)

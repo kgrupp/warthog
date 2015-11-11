@@ -67,6 +67,10 @@ class Picosat extends Solver {
     if (lastState != Solver.UNSAT)
       lastState = Solver.UNKNOWN
   }
+  
+  override def addHard(clause: ClauseLike[PL, PLLiteral]) {
+    throw new UnsupportedOperationException("addHard() ist not implemented in PicoSat")
+  }
 
   private def getIDsWithPhase(clause: ClauseLike[PL, PLLiteral]): Set[Int] = {
     clause.literals.map(literal => {
@@ -100,6 +104,10 @@ class Picosat extends Solver {
       }
       case _ => // No mark, then ignore undo
     }
+  }
+  
+  override def forgetAllMarks() {
+    throw new UnsupportedOperationException("forgetAllMarks() ist not implemented in PicoSat")
   }
 
   override def sat(): Int = {

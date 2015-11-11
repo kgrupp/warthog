@@ -69,18 +69,8 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     trailLimits.clear
   }
 
-  /**
-   * Modify needed to avoid undo() call because the model is needed
-   */
-  override protected def sat(clauses: Traversable[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
-    tUsat.start
-    val isSAT = satSolver.sat() == Solver.SAT
-    tUsat.end
-    isSAT
-  }
-
   override protected def solveImpl(softClauses: List[ClauseLike[PL, PLLiteral]]) = {
-    // works because of modified sat call which does calls no mark/undo
+    // works because sat call doesn't call mark/undo
     val partialAssignment = satSolver.getModel().get.toMap
 
     val (upperBound, emptySoftClauses) = prepare(softClauses, partialAssignment)

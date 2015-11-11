@@ -42,6 +42,7 @@ class MiniSatJava extends Solver {
   private var miniSatJavaInstance = new MSJCoreProver()
   private val varToID = Map[PLAtom, Int]()
   private val idToVar = Map[Int, PLAtom]()
+  private var hardClauses: List[ClauseLike[PL, PLLiteral]] = Nil
   private var clausesStack: List[ClauseLike[PL, PLLiteral]] = Nil
   private var marks: List[Int] = Nil
   private var lastState = Solver.UNKNOWN
@@ -52,6 +53,7 @@ class MiniSatJava extends Solver {
     miniSatJavaInstance = new MSJCoreProver
     varToID.clear()
     idToVar.clear()
+    hardClauses = Nil
     clausesStack = Nil
     marks = Nil
     lastState = Solver.UNKNOWN
@@ -59,6 +61,15 @@ class MiniSatJava extends Solver {
 
   override def add(clause: ClauseLike[PL, PLLiteral]) {
     clausesStack = (clause :: clausesStack)
+    addClauseToSolver(clause)
+
+    /* an unsatisfiable formula doesn't get satisfiable by adding clauses */
+    if (lastState != Solver.UNSAT)
+      lastState = Solver.UNKNOWN
+  }
+
+  override def addHard(clause: ClauseLike[PL, PLLiteral]) {
+    hardClauses = (clause :: hardClauses)
     addClauseToSolver(clause)
 
     /* an unsatisfiable formula doesn't get satisfiable by adding clauses */
@@ -93,11 +104,18 @@ class MiniSatJava extends Solver {
         varToID.clear()
         idToVar.clear()
         clausesStack = clausesStack.drop(clausesStack.length - h)
+        hardClauses.foreach(addClauseToSolver(_))
         clausesStack.foreach(addClauseToSolver(_))
         lastState = Solver.UNKNOWN
       }
       case _ => // No mark, then ignore undo
     }
+  }
+
+  override def forgetAllMarks() {
+    marks = Nil
+    clausesStack.foreach(clause => hardClauses = clause :: hardClauses)
+    clausesStack = Nil
   }
 
   override def sat(): Int = {
@@ -131,12 +149,15 @@ class MiniSatJava extends Solver {
 
   override def getVarState(variable: PLAtom): Option[Boolean] =
     varToID.get(variable) match {
-      case Some(v) => miniSatJavaInstance.getVarState(v) match {
-        case LBool.TRUE  => Some(true)
-        case LBool.FALSE => Some(false)
-        case LBool.UNDEF => None
-      }
       case None => None
+      case Some(v) => Option(miniSatJavaInstance.getVarState(v)) match {
+        case None => None
+        case Some(b) => b match {
+          case LBool.TRUE  => Some(true)
+          case LBool.FALSE => Some(false)
+          case LBool.UNDEF => None
+        }
+      }
     }
 
 }

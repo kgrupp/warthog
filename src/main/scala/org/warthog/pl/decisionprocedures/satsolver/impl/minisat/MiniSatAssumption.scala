@@ -70,7 +70,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
 
   override def name = {
     var option = callsUntilFullReset + "-" + assumptionsUntilFullReset
-    if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionClauses) {
+    if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionClauses.size) {
       option = "noReset"
     }
     "MinisatAssumption-" + option
@@ -92,6 +92,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
   }
 
   override def add(clause: ClauseLike[PL, PLLiteral]) = addInternal(clause, false, false)
+  override def addHard(clause: ClauseLike[PL, PLLiteral]) = addInternal(clause, false, true)
 
   private def addInternal(clause: ClauseLike[PL, PLLiteral], keepAssumptionClauses: Boolean, isHard: Boolean) {
     // add clause to solver
@@ -212,13 +213,19 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
         reset()
         assumptionClauses = tempAssumptionClauses
         assumptionClausesChecker = tempAssumptionClausesChecker
-        val addHard = (clause: ClauseLike[PL, PLLiteral]) => addInternal(clause, true, true)
-        tempHardClauses.foreach(addHard)
-        val addSoft = (clause: ClauseLike[PL, PLLiteral]) => addInternal(clause, true, false)
+        val addHardWrapper = (clause: ClauseLike[PL, PLLiteral]) => addInternal(clause, true, true)
+        tempHardClauses.foreach(addHardWrapper)
+        val addSoftWrapper = (clause: ClauseLike[PL, PLLiteral]) => addInternal(clause, true, false)
         // remember clauses are added in reversed order to satsolver
-        assumptionClauses.foreach(_.foreach(addSoft))
+        assumptionClauses.foreach(_.foreach(addSoftWrapper))
       }
     } // else no mark, then ignore undo
+  }
+  
+  override def forgetAllMarks() {
+    val addHardWrapper = (clause: ClauseLike[PL, PLLiteral]) => addHard(clause)
+    assumptionClauses.foreach(_.foreach(addHardWrapper))
+    assumptionClauses = Nil
   }
 
   override def sat(): Int = {
@@ -247,12 +254,15 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
 
   override def getVarState(variable: PLAtom): Option[Boolean] =
     varToID.get(variable) match {
-      case Some(v) => miniSatJavaInstance.getVarState(v) match {
-        case LBool.TRUE  => Some(true)
-        case LBool.FALSE => Some(false)
-        case LBool.UNDEF => None
+      case None => None
+      case Some(v) => Option(miniSatJavaInstance.getVarState(v)) match {
+        case None => None
+        case Some(b) => b match {
+          case LBool.TRUE  => Some(true)
+          case LBool.FALSE => Some(false)
+          case LBool.UNDEF => None
+        }
       }
-      case None   => None
     }
 
 }

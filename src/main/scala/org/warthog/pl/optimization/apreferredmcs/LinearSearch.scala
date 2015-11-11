@@ -52,12 +52,17 @@ class LinearSearch(satSolver: Solver, useBackbone: Boolean = false) extends SATB
       Thread.sleep(0) // to handle interrupts
       if (sat(clause)) {
         // add to gamma, treated as hard clause
-        satSolver.add(clause)
+        tUsatDel.start
+        satSolver.forgetAllMarks()
+        tUsatDel.end
       } else {
+        tUsatDel.start
+        satSolver.undo
+        tUsatDel.end
         delta = i :: delta
         if (useBackbone) {
           for (lit <- clause.literals) {
-            satSolver.add(new ImmutablePLClause(lit.negate))
+            satSolver.addHard(new ImmutablePLClause(lit.negate))
           }
         }
       }

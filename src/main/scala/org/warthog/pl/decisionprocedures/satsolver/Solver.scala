@@ -64,7 +64,12 @@ trait Solver {
    * @param clause the clause to add
    */
   def add(clause: ClauseLike[PL, PLLiteral])
-
+  
+  /**
+   * TODO javadoc
+   */
+  def addHard(clause: ClauseLike[PL, PLLiteral])
+  
   /**
    * Mark a solver's internal stack position.  Executing
    * {{{
@@ -83,6 +88,13 @@ trait Solver {
    */
   def undo()
 
+  /**
+   * Does not delete any clauses but forgets all marks
+   * 
+   * TODO javadoc
+   */
+  def forgetAllMarks()
+  
   /**
    * Checks the previously added constraints for satisfiability.
    * @return Appropriate constant UNKOWN, SAT or UNSAT
