@@ -166,6 +166,7 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
   }
 
   override def undo() {
+    // TODO bei undo assumption variablen vergessen
     lastState = Solver.UNKNOWN
     if (!assumptionClauses.isEmpty) {
       if (fullResetCounter < CALLSUNTILFULLRESET || assumptions.size() < ASSUMPTIONSUNTILFULLRESET) {
