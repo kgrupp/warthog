@@ -70,7 +70,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
 
   override def name = {
     var option = callsUntilFullReset + "-" + assumptionsUntilFullReset
-    if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionClauses.size) {
+    if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionsUntilFullReset) {
       option = "noReset"
     }
     "MinisatAssumption-" + option
