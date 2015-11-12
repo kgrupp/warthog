@@ -171,8 +171,12 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
     if (!assumptionClauses.isEmpty) {
       if (fullResetCounter < CALLSUNTILFULLRESET || assumptions.size() < ASSUMPTIONSUNTILFULLRESET) {
         for ((_, intVarIndex, assumptionVar) <- assumptionClauses.head) {
-          assumptions.set(intVarIndex, getMSJLit(assumptionVar, true))
+          // assumption variable als unit clause hinzufügen
+          val unitClause = new IntVec(1)
+          unitClause.push(getMSJLit(assumptionVar, true))
+          miniSatJavaInstance.newClause(unitClause, false)
         }
+        assumptions.shrink(assumptionClauses.head.size)
         assumptionClauses = assumptionClauses.tail
         fullResetCounter += 1
       } else {
@@ -190,7 +194,14 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
   }
 
   override def forgetAllMarks() {
-    val addHardWrapper = Function.tupled((clause: ClauseLike[PL, PLLiteral], intVarIndex: Int, assumptionVar: Int) => addHard(clause))
+    val addHardWrapper = Function.tupled((clause: ClauseLike[PL, PLLiteral], intVarIndex: Int, assumptionVar: Int) => {
+      addHard(clause)
+      // assumption variable als unit clause hinzufügen
+      val unitClause = new IntVec(1)
+      unitClause.push(getMSJLit(assumptionVar, false))
+      miniSatJavaInstance.newClause(unitClause, false)
+    })
+    assumptions.shrinkTo(0)
     assumptionClauses.foreach(_.foreach(addHardWrapper))
     assumptionClauses = Nil
   }
