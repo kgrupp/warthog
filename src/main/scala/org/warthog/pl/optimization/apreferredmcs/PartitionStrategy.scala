@@ -67,4 +67,14 @@ object PartitionStrategy {
       case _ => size
     })
 
+  def maxSizeFastDiag(max: Int) = new PartitionMaker("maxSizeFastDiag-" + max,
+    (recursionDepth, size) => recursionDepth match {
+      case 1 => {
+        val k = size / max
+        if (k < 2) 2
+        else k
+      }
+      case _ => 2
+    })
+
 }
