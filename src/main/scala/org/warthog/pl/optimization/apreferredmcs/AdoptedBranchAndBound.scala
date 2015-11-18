@@ -98,7 +98,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       }
     }
 
-    val resultVec = adoptedBranchAndBound(softClausesInt, emptySoftClauses, upperBound)
+    val resultVec = adoptedBranchAndBound(emptySoftClauses, upperBound)
     if (!resultVec.isEmpty) {
       var result = List[Int]()
       for (i <- resultVec.size - 1 to 0 by -1) {
@@ -112,24 +112,20 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
 
   val emptyVecInt = new Vec[Int]()
 
-  private def adoptedBranchAndBound(softClauses: Vec[Int],
-                                    softClausesEmpty: Vec[Int],
+  private def adoptedBranchAndBound(softClausesEmpty: Vec[Int],
                                     upperBound: Vec[Int]): Vec[Int] = {
     Thread.sleep(0) // to handle interrupts
     //myPrintln("adoptedBranchAndBound1:" + hardClauses.size + " " + hardClausesEmpty.size + " " + softClauses.size + " " + softClausesEmpty.size + " " + upperBound.size + " " + varStack.size)
     //myPrintln("adoptedBranchAndBound:\n\t\t" + /*hardClauses + "\n\t\t" + hardClausesEmpty + "\n\t\t" + */softClauses + "\n\t\t" + softClausesEmpty/* + "\n\t\t" + upperBound + "\n\t\t" + varStack*/)
     tUsimplify.start()
-    val (hardClausesAreEmpty, softClausesSimp, softClausesSimpEmpty) = simplify(softClauses, softClausesEmpty)
+    val (hardClausesAreEmpty, softClausesSimpEmpty) = simplify(softClausesEmpty)
     tUsimplify.end()
     //myPrintln("adoptedBranchAndBound2:" + hardClauses.size + " " + hardClausesEmpty.size + " " + softClauses.size + " " + softClausesEmpty.size + " " + upperBound.size + " " + varStack.size)
 
     if (hardClausesAreEmpty) {
       return upperBound
     }
-    if (softClausesSimp.isEmpty) { // all soft clauses satisfied or empty
-      return softClausesSimpEmpty
-    }
-    val lowerBound = underestimation(softClausesSimp, softClausesSimpEmpty)
+    val lowerBound = underestimation(softClausesSimpEmpty)
 
     tUantilex.start()
     if (antilex(upperBound, lowerBound)) {
@@ -152,7 +148,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     if (!assume(BABUtil.mkLit(x, false))) {
       return throw new AssertionError("already assigned other way")
     }
-    val resultPos = adoptedBranchAndBound(softClausesSimp, softClausesSimpEmpty, upperBound)
+    val resultPos = adoptedBranchAndBound(softClausesSimpEmpty, upperBound)
     cancelUntil(currentLevel)
     statsDecisions += 1
     if (statsDecisions % params.var_decay_rate == 0) {
@@ -165,7 +161,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     tUantilex.start()
     if (antilex(resultPos, upperBound)) newUpperBound = resultPos
     tUantilex.end()
-    val resultNeg = adoptedBranchAndBound(softClausesSimp, softClausesSimpEmpty, newUpperBound)
+    val resultNeg = adoptedBranchAndBound(softClausesSimpEmpty, newUpperBound)
     //myPrintln("bounds:\n\t\t" + resultPos + "\n\t\t" + resultNeg + "\n\t\t" + upperBound, true)
     tUantilex.start()
     if (antilex(resultNeg, newUpperBound)) {
@@ -184,8 +180,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
    *  containsEmptyClauses - the list contains empty clauses
    *  containsOnlyEmptyClauses - the list has only empty clauses
    */
-  private def simplify(softClauses: Vec[Int],
-                       softClausesEmpty: Vec[Int]): (Boolean, Vec[Int], Vec[Int]) = {
+  private def simplify(softClausesEmpty: Vec[Int]): (Boolean, Vec[Int]) = {
     var hardClausesAreEmpty = false
     var emptyNewSoft = List[Int]()
 
@@ -284,7 +279,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     // combine old result with newer information
     //myPrintln("simplify (changed clauses):\n\t\t" + satNewHard + "\n\t\t" + emptyNewHard + "\n\t\t" + satNewSoft + "\n\t\t" + emptyNewSoft)
     tUcombineVecs.start()
-    val (resultSoft, resultSoftEmpty) = combineVecsSoft(softClauses, softClausesEmpty, emptyNewSoft)
+    val resultSoftEmpty = combineVecsSoft(softClausesEmpty, emptyNewSoft)
     tUcombineVecs.end()
     /*myPrintln("simplify (result):\n\t\t" + resultHard + "\n\t\t" + resultHardEmpty + "\n\t\t" + resultSoft + "\n\t\t" + resultSoftEmpty)
     myPrintln("current states: " + vars)
@@ -292,10 +287,10 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       myPrintln("softClause not satisfied: " + softClausesArySim(resultSoft.get(i)))
     }*/
     Thread.sleep(0) // to handle interrupts
-    (hardClausesAreEmpty, resultSoft, resultSoftEmpty)
+    (hardClausesAreEmpty, resultSoftEmpty)
   }
 
-  private def combineVecsSoft(clauses: Vec[Int], clausesEmpty: Vec[Int], emptyNew: List[Int]): (Vec[Int], Vec[Int]) = {
+  private def combineVecsSoft(clausesEmpty: Vec[Int], emptyNew: List[Int]): Vec[Int] = {
     //myPrintln("combineVecsSoft: \n\t\t" + clauses + "\n\t\t" + clausesEmpty + "\n\t\t" + emptyNew)
     // sort satNew and emptyNew because they may be not in order to do a combination in linear time
     var clID = 0
@@ -311,31 +306,6 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     var clNewEm = Integer.MAX_VALUE
     if (itNewEm.hasNext) {
       clNewEm = itNewEm.next
-    }
-
-    // calc result for clauses which are false
-    var resultSize = clauses.size - emptyNewSorted.size
-    if (resultSize < 5) resultSize = 5
-    val result = new Vec[Int](resultSize)
-    while (clID < clauses.size) {
-      val currentCl = clauses.get(clID)
-      if (clNewEm == currentCl) {
-        if (itNewEm.hasNext) {
-          clNewEm = itNewEm.next
-        } else {
-          clNewEm = Integer.MAX_VALUE
-        }
-        clID += 1
-      } else {
-        var currentClause = softClausesArySim(currentCl)
-        if (value(currentClause.get(0)) == VarState.TRUE) {
-          //myPrintln("found sat clause to delete: " + currentClause)
-          // clause is satisfied
-        } else {
-          result.push(currentCl)
-        }
-        clID += 1
-      }
     }
 
     // calc result for empty Clauses
@@ -368,8 +338,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
         clNewEm = Integer.MAX_VALUE
       }
     }
-    //myPrintln("combineVecs (result): \n\t\t" + result + "\n\t\t" + resultEmpty)
-    (result, resultEmpty)
+    resultEmpty
   }
 
   /**
@@ -381,7 +350,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
    *  (ii) a clause set (Underestimation) of original clauses which will
    *       become unsatisfied under the current assignment.
    */
-  private def underestimation(softClauses: Vec[Int], softClausesEmpty: Vec[Int]): Vec[Int] = {
+  private def underestimation(softClausesEmpty: Vec[Int]): Vec[Int] = {
     softClausesEmpty // in best case it could be this
   }
 
