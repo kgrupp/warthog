@@ -128,7 +128,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     val lowerBound = underestimation(softClausesSimpEmpty)
 
     tUantilex.start()
-    if (antilex(upperBound, lowerBound)) {
+    if (antilexLeq(upperBound, lowerBound)) {
       tUantilex.end()
       return upperBound
     }
@@ -159,12 +159,12 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     }
     var newUpperBound = upperBound
     tUantilex.start()
-    if (antilex(resultPos, upperBound)) newUpperBound = resultPos
+    if (antilexLeq(resultPos, upperBound)) newUpperBound = resultPos
     tUantilex.end()
     val resultNeg = adoptedBranchAndBound(softClausesSimpEmpty, newUpperBound)
     //myPrintln("bounds:\n\t\t" + resultPos + "\n\t\t" + resultNeg + "\n\t\t" + upperBound, true)
     tUantilex.start()
-    if (antilex(resultNeg, newUpperBound)) {
+    if (antilexLeq(resultNeg, newUpperBound)) {
       tUantilex.end()
       return resultNeg
     } else {
@@ -357,7 +357,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
   /**
    * Checks whether the current lower bound is not preferred to the upper bound
    */
-  private def antilex(lis1: Vec[Int], lis2: Vec[Int]): Boolean = {
+  private def antilexLeq(lis1: Vec[Int], lis2: Vec[Int]): Boolean = {
     //myPrintln("antilex: " + lis1 + " < " + lis2)
     if (lis1.isEmpty) {
       return true
