@@ -40,8 +40,6 @@ import org.warthog.pl.optimization.apreferredmcs.impl.TimeUsed
  */
 abstract class APreferredMCSSolver() {
 
-  protected var result: Option[List[Int]] = None
-
   def name: String
 
   /**
@@ -50,7 +48,7 @@ abstract class APreferredMCSSolver() {
   var timeUsed: List[TimeUsed] = List()
 
   def reset() {
-    result = None
+    
   }
 
   def addHardConstraint(fm: Formula[PL]) {
@@ -76,6 +74,7 @@ abstract class APreferredMCSSolver() {
     if (keepState) {
       markHardConstraints()
     }
+    var result: Option[List[Int]] = None
     if (!areHardConstraintsSatisfiable())
       result = None
     else

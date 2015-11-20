@@ -44,7 +44,7 @@ import scala.util.control.Breaks.{ break, breakable }
  *
  * @author Konstantin Grupp
  */
-class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFullReset: Int) extends Solver {
+class MiniSatAssumptionAllowDoublesOrginal(callsUntilFullReset: Int, assumptionsUntilFullReset: Int) extends Solver {
 
   def this() = this(Int.MaxValue, Int.MaxValue)
 
@@ -63,7 +63,7 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
 
   // for dimacs output
   private var hardClauses: List[ClauseLike[PL, PLLiteral]] = Nil
-  private var assumptionClauses: List[List[ClauseLike[PL, PLLiteral]]] = Nil
+  private var assumptionClauses: List[List[(ClauseLike[PL, PLLiteral], Int, Int)]] = Nil
 
   // no extra init necessary
 
@@ -72,7 +72,7 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
     if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionsUntilFullReset) {
       option = "noReset"
     }
-    "MiniSatAssumptionAllowDoubles-" + option
+    "MiniSatAssumptionAllowDoublesOrginal-" + option
   }
 
   override def reset() {
@@ -98,7 +98,7 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
     } else {
 
       // add variable to disable clause if needed (for mark()/undo() needed)
-      //val (intVarIndex, assumptionVar) = newAssupmtionVar(clause)
+      val (intVarIndex, assumptionVar) = newAssupmtionVar(clause)
 
       // converts ClauseLike to Set[Int]
       // and adds variables to miniSatJavaInstance, varToID, idToVar
@@ -107,11 +107,10 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
       // Add clause to miniSatJavaInstance
       val resClause = new IntVec()
       clauseWithIDs.foreach { x => resClause.push(x) }
-      val assumptionVar = MSJCoreProver.`var`(assumptions.last())
       resClause.push(getMSJLit(assumptionVar, true))
       miniSatJavaInstance.newClause(resClause, false)
 
-      assumptionClauses = (clause :: assumptionClauses.head) :: assumptionClauses.tail
+      assumptionClauses = ((clause, intVarIndex, assumptionVar) :: assumptionClauses.head) :: assumptionClauses.tail
 
       if (lastState != Solver.UNSAT)
         lastState = Solver.UNKNOWN
@@ -148,13 +147,13 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
     }).toSet
   }
 
-  private def newAssupmtionVar() = {
-    val variable = new PLAtom("AssumptionVar LVL " + assumptions.size())
+  private def newAssupmtionVar(clause: ClauseLike[PL, PLLiteral]) = {
+    val variable = new PLAtom("AssumptionVar for: " + clause.toString())
     val nextID = miniSatJavaInstance.newVar()
     val intVarIndex = assumptions.size()
     assumptions.push(getMSJLit(nextID, false))
-    //idToVar += (nextID -> variable)
-    //varToID += (variable -> nextID)
+    idToVar += (nextID -> variable)
+    varToID += (variable -> nextID)
     //clauseToVar += (clause -> nextID)
     //clauseToID += (clause -> intVarIndex)
     (intVarIndex, nextID)
@@ -164,21 +163,20 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
 
   override def mark() {
     assumptionClauses = List() :: assumptionClauses
-    newAssupmtionVar()
   }
 
   override def undo() {
-    // bei undo assumption variablen vergessen
+    // TODO bei undo assumption variablen vergessen
     lastState = Solver.UNKNOWN
     if (!assumptionClauses.isEmpty) {
       if (fullResetCounter < CALLSUNTILFULLRESET || assumptions.size() < ASSUMPTIONSUNTILFULLRESET) {
-        val assumptionVar = MSJCoreProver.`var`(assumptions.last())
-        // assumption variable als unit clause hinzufügen
-        val unitClause = new IntVec(1)
-        unitClause.push(getMSJLit(assumptionVar, true))
-        miniSatJavaInstance.newClause(unitClause, false)
-          
-        assumptions.shrink(1)
+        for ((_, intVarIndex, assumptionVar) <- assumptionClauses.head) {
+          // assumption variable als unit clause hinzufügen
+          val unitClause = new IntVec(1)
+          unitClause.push(getMSJLit(assumptionVar, true))
+          miniSatJavaInstance.newClause(unitClause, false)
+        }
+        assumptions.shrink(assumptionClauses.head.size)
         assumptionClauses = assumptionClauses.tail
         fullResetCounter += 1
       } else {
@@ -188,7 +186,7 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
         reset()
         val addHardWrapper = (clause: ClauseLike[PL, PLLiteral]) => add(clause)
         tempHardClauses.foreach(addHardWrapper)
-        val addSoftWrapper = (clause: ClauseLike[PL, PLLiteral]) => add(clause)
+        val addSoftWrapper = Function.tupled((clause: ClauseLike[PL, PLLiteral], intVarIndex: Int, assumptionVar: Int) => add(clause))
         // remember clauses are added in reversed order to satsolver
         tempAssumptionClauses.foreach(_.foreach(addSoftWrapper))
       }
@@ -196,25 +194,22 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
   }
 
   override def forgetAllMarks() {
-    val addHardWrapper = (clause: ClauseLike[PL, PLLiteral]) => {
+    val addHardWrapper = Function.tupled((clause: ClauseLike[PL, PLLiteral], intVarIndex: Int, assumptionVar: Int) => {
       hardClauses = clause :: hardClauses
-    }
-    assumptionClauses.foreach((_) => {
       // assumption variable als unit clause hinzufügen
       val unitClause = new IntVec(1)
-      val assumptionVar = MSJCoreProver.`var`(assumptions.last())
       unitClause.push(getMSJLit(assumptionVar, false))
       miniSatJavaInstance.newClause(unitClause, false)
     })
+    assumptions.shrinkTo(0)
     assumptionClauses.foreach(_.foreach(addHardWrapper))
     assumptionClauses = Nil
-    assumptions.shrinkTo(0)
   }
 
   override def sat(): Int = {
     if (lastState == Solver.UNKNOWN) {
       /* call sat only if solver is in unknown state */
-      lastState = MiniSatAssumptionAllowDoubles.minisatStateToSolverState(miniSatJavaInstance.solve(assumptions))
+      lastState = MiniSatAssumptionAllowDoublesOrginal.minisatStateToSolverState(miniSatJavaInstance.solve(assumptions))
     }
     lastState
   }
@@ -250,7 +245,7 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
 
 }
 
-object MiniSatAssumptionAllowDoubles {
+object MiniSatAssumptionAllowDoublesOrginal {
 
   private def minisatStateToSolverState(minisatState: Boolean) = minisatState match {
     case false => Solver.UNSAT
