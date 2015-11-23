@@ -26,7 +26,10 @@
 package org.warthog.pl.decisionprocedures.satsolver.impl.minisat
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable.Map
+import scala.collection.mutable.HashMap
+import scala.util.control.Breaks.break
+import scala.util.control.Breaks.breakable
+
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.decisionprocedures.satsolver.Model
@@ -36,25 +39,17 @@ import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.datastructures.LBool
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.formulas.PLAtom
-import scala.collection.mutable.HashMap
-import scala.util.control.Breaks.{ break, breakable }
 
 /**
  * Solver Wrapper for Minisat (uses MSJCoreProver)
  *
  * @author Konstantin Grupp
  */
-class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFullReset: Int) extends Solver {
+class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFullReset: Int) extends AbstractMiniSat {
 
   def this() = this(Int.MaxValue, Int.MaxValue)
 
-  private var miniSatJavaInstance = new MSJCoreProver()
-  private val varToID = HashMap[PLAtom, Int]()
-  private val idToVar = HashMap[Int, PLAtom]()
-  //private val clauseToVar = HashMap[ClauseLike[PL, PLLiteral], Int]()
-  //private val clauseToID = HashMap[ClauseLike[PL, PLLiteral], Int]()
   private val assumptions: IntVec = new IntVec()
-  private var lastState = Solver.UNKNOWN
 
   // AutoReset functionality to hold assumption vars small  
   private var fullResetCounter = 0
@@ -68,23 +63,18 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
   // no extra init necessary
 
   override def name = {
-    var option = callsUntilFullReset + "-" + assumptionsUntilFullReset
+    var option = "-" + callsUntilFullReset + "-" + assumptionsUntilFullReset
     if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionsUntilFullReset) {
-      option = "noReset"
+      option = ""
     }
-    "MiniSatAssumptionAllowDoubles-" + option
+    "MiniSatAssumptionAllowDoubles" + option
   }
 
   override def reset() {
+    super.reset()
     assumptions.clear()
     assumptionClauses = Nil
     hardClauses = Nil
-    //clauseToVar.clear()
-    //clauseToID.clear()
-    miniSatJavaInstance = new MSJCoreProver()
-    varToID.clear()
-    idToVar.clear()
-    lastState = Solver.UNKNOWN
 
     fullResetCounter = 0
   }
@@ -139,12 +129,8 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
    */
   private def getIDsWithPhase(clause: ClauseLike[PL, PLLiteral]): Set[Int] = {
     clause.literals.map(literal => {
-      val (v, phaseFactor) = (literal.variable, literal.phase)
-      getMSJLit(varToID.getOrElseUpdate(v, {
-        val nextID = miniSatJavaInstance.newVar()
-        idToVar += (nextID -> v)
-        nextID
-      }), phaseFactor)
+      val (variable, phaseFactor) = (literal.variable, literal.phase)
+      getMSJLit(getVariableOrElseUpdate(variable), phaseFactor)
     }).toSet
   }
 
@@ -154,9 +140,6 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
     val intVarIndex = assumptions.size()
     assumptions.push(getMSJLit(nextID, false))
     //idToVar += (nextID -> variable)
-    //varToID += (variable -> nextID)
-    //clauseToVar += (clause -> nextID)
-    //clauseToID += (clause -> intVarIndex)
     (intVarIndex, nextID)
   }
 
@@ -220,46 +203,9 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
   override def sat(): Int = {
     if (lastState == Solver.UNKNOWN) {
       /* call sat only if solver is in unknown state */
-      lastState = MiniSatAssumptionAllowDoubles.minisatStateToSolverState(miniSatJavaInstance.solve(assumptions))
+      lastState = AbstractMiniSat.miniSatJavaStateToSolverState(miniSatJavaInstance.solve(assumptions))
     }
     lastState
   }
 
-  override def getModel(): Option[Model] = {
-    require(lastState == Solver.SAT || lastState == Solver.UNSAT, "getModel(): Solver needs to be in SAT or UNSAT state!")
-
-    lastState match {
-      case Solver.UNSAT => None
-      case Solver.SAT => {
-        val map: List[Integer] = miniSatJavaInstance.getModel().asScala.toList
-        val positiveVariables = map.filter { lit => !MSJCoreProver.sign(lit) }
-          .map { lit => idToVar(MSJCoreProver.`var`(lit)) }.toList
-        val negativeVariables = map.filter { lit => MSJCoreProver.sign(lit) }
-          .map { lit => idToVar(MSJCoreProver.`var`(lit)) }.toList
-        Some(Model(positiveVariables, negativeVariables))
-      }
-    }
-  }
-
-  override def getVarState(variable: PLAtom): Option[Boolean] =
-    varToID.get(variable) match {
-      case None => None
-      case Some(v) => Option(miniSatJavaInstance.getVarState(v)) match {
-        case None => None
-        case Some(b) => b match {
-          case LBool.TRUE  => Some(true)
-          case LBool.FALSE => Some(false)
-          case LBool.UNDEF => None
-        }
-      }
-    }
-
-}
-
-object MiniSatAssumptionAllowDoubles {
-
-  private def minisatStateToSolverState(minisatState: Boolean) = minisatState match {
-    case false => Solver.UNSAT
-    case true  => Solver.SAT
-  }
 }

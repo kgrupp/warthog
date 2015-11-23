@@ -38,25 +38,18 @@ import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
 /**
  * Solver Wrapper for MiniSatJava.
  */
-class MiniSatJava extends Solver {
-  private var miniSatJavaInstance = new MSJCoreProver()
-  private val varToID = Map[PLAtom, Int]()
-  private val idToVar = Map[Int, PLAtom]()
+class MiniSatJava extends AbstractMiniSat {
   private var hardClauses: List[ClauseLike[PL, PLLiteral]] = Nil
   private var clausesStack: List[ClauseLike[PL, PLLiteral]] = Nil
   private var marks: List[Int] = Nil
-  private var lastState = Solver.UNKNOWN
 
   override def name = "MiniSatJava"
 
   override def reset() {
-    miniSatJavaInstance = new MSJCoreProver
-    varToID.clear()
-    idToVar.clear()
+    super.reset()
     hardClauses = Nil
     clausesStack = Nil
     marks = Nil
-    lastState = Solver.UNKNOWN
   }
 
   override def add(clause: ClauseLike[PL, PLLiteral]) {
@@ -79,13 +72,8 @@ class MiniSatJava extends Solver {
 
   private def addClauseToSolver(clause: ClauseLike[PL, PLLiteral]) {
     val clauseAsIntVec = new IntVec(clause.literals.map(literal => {
-      val (v, phase) = (literal.variable, literal.phase)
-      val id = varToID.getOrElseUpdate(v, {
-        miniSatJavaInstance.newVar()
-        val nextID = varToID.size
-        idToVar += (nextID -> v)
-        nextID
-      })
+      val (variable, phase) = (literal.variable, literal.phase)
+      val id = getVariableOrElseUpdate(variable)
       MSJCoreProver.mkLit(id, !phase)
     }).toArray)
 
@@ -100,13 +88,10 @@ class MiniSatJava extends Solver {
     marks match {
       case head :: tail => {
         marks = tail
-        miniSatJavaInstance = new MSJCoreProver
-        varToID.clear()
-        idToVar.clear()
+        super.reset()
         clausesStack = clausesStack.drop(clausesStack.length - head)
         hardClauses.foreach(addClauseToSolver(_))
         clausesStack.foreach(addClauseToSolver(_))
-        lastState = Solver.UNKNOWN
       }
       case _ => // No mark, then ignore undo
     }
@@ -128,50 +113,8 @@ class MiniSatJava extends Solver {
   override def sat(): Int = {
     if (lastState == Solver.UNKNOWN)
       /* call sat only if solver is in unknown state */
-      lastState = MiniSatJava.miniSatJavaStateToSolverState(miniSatJavaInstance.solve())
+      lastState = AbstractMiniSat.miniSatJavaStateToSolverState(miniSatJavaInstance.solve())
     lastState
   }
 
-  override def getModel(): Option[Model] = {
-    require(lastState == Solver.SAT || lastState == Solver.UNSAT, "getModel(): Solver needs to be in SAT or UNSAT state!")
-
-    lastState match {
-      case Solver.UNSAT => None
-      case Solver.SAT => {
-        val miniSatJavaModel: List[Integer] = miniSatJavaInstance.getModel().asScala.toList
-        val positiveVariables = miniSatJavaModel.filter {
-          lit => !MSJCoreProver.sign(lit)
-        }.map {
-          lit => idToVar(MSJCoreProver.`var`(lit))
-        }.toList
-        val negativeVariables = miniSatJavaModel.filter {
-          lit => MSJCoreProver.sign(lit)
-        }.map {
-          lit => idToVar(MSJCoreProver.`var`(lit))
-        }.toList
-        Some(Model(positiveVariables, negativeVariables))
-      }
-    }
-  }
-
-  override def getVarState(variable: PLAtom): Option[Boolean] =
-    varToID.get(variable) match {
-      case None => None
-      case Some(v) => Option(miniSatJavaInstance.getVarState(v)) match {
-        case None => None
-        case Some(b) => b match {
-          case LBool.TRUE  => Some(true)
-          case LBool.FALSE => Some(false)
-          case LBool.UNDEF => None
-        }
-      }
-    }
-
-}
-
-object MiniSatJava {
-  private def miniSatJavaStateToSolverState(miniSatJavaState: Boolean) = miniSatJavaState match {
-    case false => Solver.UNSAT
-    case true  => Solver.SAT
-  }
 }
