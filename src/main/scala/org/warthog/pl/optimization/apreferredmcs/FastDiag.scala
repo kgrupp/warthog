@@ -71,7 +71,7 @@ class FastDiag(satSolver: Solver, assumeUNSAT: Boolean = false) extends SATBased
     Thread.sleep(0) // to handle interrupts
     if (!isRedundant && mySat(softClauses)) {
       tUsatDel.start()
-      satSolver.forgetAllMarks()
+      satSolver.forgetLastMark()
       tUsatDel.end()
       List()
     } else if (softClauses.size == 1) {

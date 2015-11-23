@@ -98,12 +98,12 @@ class MiniSatJava extends Solver {
 
   override def undo() {
     marks match {
-      case h :: t => {
-        marks = t
+      case head :: tail => {
+        marks = tail
         miniSatJavaInstance = new MSJCoreProver
         varToID.clear()
         idToVar.clear()
-        clausesStack = clausesStack.drop(clausesStack.length - h)
+        clausesStack = clausesStack.drop(clausesStack.length - head)
         hardClauses.foreach(addClauseToSolver(_))
         clausesStack.foreach(addClauseToSolver(_))
         lastState = Solver.UNKNOWN
@@ -112,10 +112,17 @@ class MiniSatJava extends Solver {
     }
   }
 
-  override def forgetAllMarks() {
-    marks = Nil
-    clausesStack.foreach(clause => hardClauses = clause :: hardClauses)
-    clausesStack = Nil
+  override def forgetLastMark() {
+    marks match {
+      case head :: tail => {
+        val (newClausesStack, newHardClauses) = clausesStack.splitAt(clausesStack.length - head)
+        newHardClauses.foreach(clause => hardClauses = clause :: hardClauses)
+        clausesStack = newClausesStack
+        marks = tail
+      }
+      case _ => // No mark, then ignore forgetLastMark
+    }
+
   }
 
   override def sat(): Int = {

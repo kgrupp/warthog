@@ -177,7 +177,7 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
         val unitClause = new IntVec(1)
         unitClause.push(getMSJLit(assumptionVar, true))
         miniSatJavaInstance.newClause(unitClause, false)
-          
+
         assumptions.shrink(1)
         assumptionClauses = assumptionClauses.tail
         fullResetCounter += 1
@@ -195,20 +195,26 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
     } // else no mark, then ignore undo
   }
 
-  override def forgetAllMarks() {
-    val addHardWrapper = (clause: ClauseLike[PL, PLLiteral]) => {
-      hardClauses = clause :: hardClauses
+  override def forgetLastMark() {
+    assumptionClauses match {
+      case head :: tail => {
+        val addHardWrapper = (clause: ClauseLike[PL, PLLiteral]) => {
+          hardClauses = clause :: hardClauses
+        }
+
+        // assumption variable als unit clause hinzufügen
+        val unitClause = new IntVec(1)
+        val assumptionVar = MSJCoreProver.`var`(assumptions.last())
+        unitClause.push(getMSJLit(assumptionVar, false))
+        miniSatJavaInstance.newClause(unitClause, false)
+
+        head.foreach(addHardWrapper)
+        assumptionClauses = tail
+        assumptions.shrink(1)
+      }
+      case _ => // else no mark, then ignore forgetLastMark
     }
-    assumptionClauses.foreach((_) => {
-      // assumption variable als unit clause hinzufügen
-      val unitClause = new IntVec(1)
-      val assumptionVar = MSJCoreProver.`var`(assumptions.last())
-      unitClause.push(getMSJLit(assumptionVar, false))
-      miniSatJavaInstance.newClause(unitClause, false)
-    })
-    assumptionClauses.foreach(_.foreach(addHardWrapper))
-    assumptionClauses = Nil
-    assumptions.shrinkTo(0)
+
   }
 
   override def sat(): Int = {

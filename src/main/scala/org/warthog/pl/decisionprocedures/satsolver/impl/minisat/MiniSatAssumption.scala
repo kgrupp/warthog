@@ -223,10 +223,14 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
     } // else no mark, then ignore undo
   }
   
-  override def forgetAllMarks() {
-    val addHardWrapper = (clause: ClauseLike[PL, PLLiteral]) => addHard(clause)
-    assumptionClauses.foreach(_.foreach(addHardWrapper))
-    assumptionClauses = Nil
+  override def forgetLastMark() {
+    assumptionClauses match {
+      case head :: tail => {
+        head.foreach(addHard)
+        assumptionClauses = tail
+      }
+      case _ => // else no mark, then ignore forgetLastMark
+    }
   }
 
   override def sat(): Int = {

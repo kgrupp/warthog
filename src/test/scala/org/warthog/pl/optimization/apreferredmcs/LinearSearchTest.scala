@@ -26,7 +26,6 @@
 package org.warthog.pl.optimization.apreferredmcs
 
 import java.io.File
-
 import org.specs2.mutable.Specification
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
@@ -35,6 +34,7 @@ import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatAssumptio
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatAssumption
 
 /**
  * Tests linear search
@@ -49,7 +49,9 @@ class LinearSearchTest extends Specification {
     List("src", "test", "resources", "maxsat", "partial", folder, file).mkString(File.separator)
 
   private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[List[Int]]) {
-    val solverLis = List(new LinearSearch(new MiniSatAssumptionAllowDoubles()), new LinearSearch(new MiniSatAssumptionAllowDoubles(), true))
+    val solverLis = List(new LinearSearch(new MiniSatJava()),
+        new LinearSearch(new MiniSatAssumption()),
+        new LinearSearch(new MiniSatAssumptionAllowDoubles(), true))
     for (solver <- solverLis) {
       val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
       "File " + fileName + " with " + solver.name should {

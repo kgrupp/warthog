@@ -110,7 +110,7 @@ class GeneralChunks(satSolver: Solver, partitionMaker: PartitionMaker, useModelE
       }
 
       tUsatDel.start
-      satSolver.forgetAllMarks()
+      satSolver.forgetLastMark()
       tUsatDel.end
 
       (true, numberOfAdditionalClausesSatisfied)

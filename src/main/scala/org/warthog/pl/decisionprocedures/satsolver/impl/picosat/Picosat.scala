@@ -106,8 +106,8 @@ class Picosat extends Solver {
     }
   }
   
-  override def forgetAllMarks() {
-    throw new UnsupportedOperationException("forgetAllMarks() ist not implemented in PicoSat")
+  override def forgetLastMark() {
+    throw new UnsupportedOperationException("forgetLastMark() ist not implemented in PicoSat")
   }
 
   override def sat(): Int = {

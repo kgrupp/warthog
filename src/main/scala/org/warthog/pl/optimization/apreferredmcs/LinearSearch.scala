@@ -53,7 +53,7 @@ class LinearSearch(satSolver: Solver, useBackbone: Boolean = false) extends SATB
       if (sat(clause)) {
         // add to gamma, treated as hard clause
         tUsatDel.start
-        satSolver.forgetAllMarks()
+        satSolver.forgetLastMark()
         tUsatDel.end
       } else {
         tUsatDel.start

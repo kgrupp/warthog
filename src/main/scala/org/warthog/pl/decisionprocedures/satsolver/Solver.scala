@@ -89,11 +89,11 @@ trait Solver {
   def undo()
 
   /**
-   * Does not delete any clauses but forgets all marks
+   * Does not delete any clauses but forget the last mark
    * 
    * TODO javadoc
    */
-  def forgetAllMarks()
+  def forgetLastMark()
   
   /**
    * Checks the previously added constraints for satisfiability.
