@@ -93,10 +93,9 @@ class GeneralChunks(satSolver: Solver, partitionMaker: PartitionMaker, useModelE
 
       if (useModelExploiting) {
         // restricted model exploiting start
-        modelExploiting.reset
         breakable {
           for (j <- end + 1 to softClausesAry.size - 1) {
-            Thread.sleep(1) // to handle interrupts
+            Thread.sleep(0) // to handle interrupts
             val checkClause = softClausesAry(j)
             if (modelExploiting.isSat(checkClause)) {
               satSolver.addHard(checkClause)

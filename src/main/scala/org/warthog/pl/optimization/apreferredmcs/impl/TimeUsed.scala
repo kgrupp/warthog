@@ -35,7 +35,7 @@ class TimeUsed(functionName:String) {
   private var lastStart:List[Long] = List()
   
   def start() = {
-    lastStart = lastStart.+:(System.currentTimeMillis())
+    lastStart = System.currentTimeMillis() :: lastStart
     counter += 1
   }
   
