@@ -75,10 +75,6 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
 
     val (upperBound, emptySoftClauses) = prepare(softClauses, partialAssignment)
 
-    /*val hardClausesInt = new Vec[Int](hardClauses.size)
-    for (i <- 0 to hardClauses.size - 1) {
-      hardClausesInt.push(i)
-    }*/
     val softClausesInt = new Vec[Int](softClauses.size)
     if (emptySoftClauses.isEmpty()) {
       for (i <- 0 to softClauses.size - 1) {
@@ -115,12 +111,9 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
   private def adoptedBranchAndBound(softClausesEmpty: Vec[Int],
                                     upperBound: Vec[Int]): Vec[Int] = {
     Thread.sleep(0) // to handle interrupts
-    //myPrintln("adoptedBranchAndBound1:" + hardClauses.size + " " + hardClausesEmpty.size + " " + softClauses.size + " " + softClausesEmpty.size + " " + upperBound.size + " " + varStack.size)
-    //myPrintln("adoptedBranchAndBound:\n\t\t" + /*hardClauses + "\n\t\t" + hardClausesEmpty + "\n\t\t" + */softClauses + "\n\t\t" + softClausesEmpty/* + "\n\t\t" + upperBound + "\n\t\t" + varStack*/)
     tUsimplify.start()
     val (hardClausesAreEmpty, softClausesSimpEmpty) = simplify(softClausesEmpty)
     tUsimplify.end()
-    //myPrintln("adoptedBranchAndBound2:" + hardClauses.size + " " + hardClausesEmpty.size + " " + softClauses.size + " " + softClausesEmpty.size + " " + upperBound.size + " " + varStack.size)
 
     if (hardClausesAreEmpty) {
       return upperBound
@@ -134,8 +127,6 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     }
     tUantilex.end()
     val x = pickNextVar()
-    //myPrintln("newAssumptionVar: " + x + " on decisionLevel " + decisionLevel)
-    //myPrintln(varStack.toString)
     if (x == -1) {
       // all soft clauses are satisfied but not all were detected by simplify 
       return softClausesSimpEmpty
@@ -162,7 +153,6 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     if (antilexLeq(resultPos, upperBound)) newUpperBound = resultPos
     tUantilex.end()
     val resultNeg = adoptedBranchAndBound(softClausesSimpEmpty, newUpperBound)
-    //myPrintln("bounds:\n\t\t" + resultPos + "\n\t\t" + resultNeg + "\n\t\t" + upperBound, true)
     tUantilex.start()
     if (antilexLeq(resultNeg, newUpperBound)) {
       tUantilex.end()
@@ -186,26 +176,22 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
 
     while (qhead < trail.size()) {
       val propLit = trail.get(qhead)
-      //myPrintln("simplify: " + qhead + " < " + trail.size + " propLit: " + propLit)
       qhead += 1
       val watchers: IVec[ClauseBAB] = watches.get(propLit)
       var i = 0;
       var j = 0;
       while (i != watchers.size()) {
         Thread.sleep(0) // to handle interrupts
-        //myPrintln("simplify: watchers " + i + " < " + watchers.size + " clause: " + watchers.get(i))
         if (watchers.get(i).isLit()) {
           val unitClause = watchers.get(i)
           if (unitClause.isHard()) {
             throw new AssertionError("not possible")
           } else { // is softclause
             if (value(unitClause.lit()) == VarState.TRUE) {
-              //myPrintln("found soft sat clause: " + unitClause)
               watchers.set(j, watchers.get(i))
               j += 1
               i += 1
             } else if (value(unitClause.lit()) == VarState.FALSE) {
-              //myPrintln("found soft empty clause: " + unitClause)
               // TODO avoid to add clauses 2 times in some cases
               emptyNewSoft = unitClause.getID :: emptyNewSoft
               getVar(unitClause.lit()).bumpActivity(5)
@@ -258,11 +244,9 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
                     i += 1
                     j += 1
                   }
-                  //myPrintln("found hard empty clause: " + c)
                 }
               } else { // is soft clause
                 if (value(first) == VarState.FALSE) {
-                  //myPrintln("found soft empty clause: " + c)
                   // TODO avoid to add clauses 2 times in some cases
                   emptyNewSoft = c.getID :: emptyNewSoft
                   for (i <- 0 to c.size()-1) {
@@ -277,30 +261,21 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       watchers.shrink(i - j)
     }
     // combine old result with newer information
-    //myPrintln("simplify (changed clauses):\n\t\t" + satNewHard + "\n\t\t" + emptyNewHard + "\n\t\t" + satNewSoft + "\n\t\t" + emptyNewSoft)
     tUcombineVecs.start()
     val resultSoftEmpty = combineVecsSoft(softClausesEmpty, emptyNewSoft)
     tUcombineVecs.end()
-    /*myPrintln("simplify (result):\n\t\t" + resultHard + "\n\t\t" + resultHardEmpty + "\n\t\t" + resultSoft + "\n\t\t" + resultSoftEmpty)
-    myPrintln("current states: " + vars)
-    for (i <- 0 to resultSoft.size - 1) {
-      myPrintln("softClause not satisfied: " + softClausesArySim(resultSoft.get(i)))
-    }*/
     Thread.sleep(0) // to handle interrupts
     (hardClausesAreEmpty, resultSoftEmpty)
   }
 
   private def combineVecsSoft(clausesEmpty: Vec[Int], emptyNew: List[Int]): Vec[Int] = {
-    //myPrintln("combineVecsSoft: \n\t\t" + clauses + "\n\t\t" + clausesEmpty + "\n\t\t" + emptyNew)
+    if (emptyNew.isEmpty) {
+      return clausesEmpty
+    }
+    
     // sort satNew and emptyNew because they may be not in order to do a combination in linear time
     var clID = 0
     val emptyNewSorted = emptyNew.sortWith(_ < _).distinct // TODO efficient duplicate elimination
-
-    if (false && emptyNew.size != emptyNewSorted.size) {
-      myPrintln(emptyNew)
-      myPrintln(emptyNewSorted)
-      throw new AssertionError("emptyNew")
-    }
 
     var itNewEm = emptyNewSorted.iterator
     var clNewEm = Integer.MAX_VALUE
@@ -358,7 +333,6 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
    * Checks whether the current lower bound is not preferred to the upper bound
    */
   private def antilexLeq(lis1: Vec[Int], lis2: Vec[Int]): Boolean = {
-    //myPrintln("antilex: " + lis1 + " < " + lis2)
     if (lis1.isEmpty) {
       return true
     } else if (lis2.isEmpty) {
@@ -507,15 +481,12 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       variable.assign(VarState.fromBool(!BABUtil.sign(lit)))
       variable.setLevel(decisionLevel)
       trail.push(lit)
-      //myPrintln("assign: " + getVar(lit))
       true
     }
   }
 
   private def cancelUntil(level: Int) {
-    //myPrintln("cancelUntil (start):\n" + trail + "\n" + trailLimits)
     if (level < decisionLevel()) {
-      //myPrintln("from " + (trail.size - 1) + " to " + trailLimits.get(level))
       for (c <- trail.size - 1 to trailLimits.get(level) by -1) {
         val variable = getVar(trail.get(c))
         variable.assign(VarState.UNDEF)
@@ -523,14 +494,11 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
         if (varHeap.find(variable) == -1) {
           varHeap.insert(variable);
         }
-        //myPrintln(variable)
       }
       trail.shrink(trail.size() - trailLimits.get(level))
       trailLimits.shrink(trailLimits.size() - level)
       qhead = trail.size
     }
-    //myPrintln("cancelUntil (end):\n" + trail + "\n" + trailLimits)
-    //myPrintln(vars)
   }
 
   /**
@@ -572,7 +540,5 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
       variable.assignment
     }
   }
-
-  private def myPrintln(s: Object, activate: Boolean = false) = println("\t" + decisionLevel() + "\t" + s.toString)
 
 }
