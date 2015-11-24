@@ -45,16 +45,15 @@ import org.warthog.pl.formulas.PLAtom
  *
  * @author Konstantin Grupp
  */
-class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFullReset: Int) extends AbstractMiniSat {
+class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int) extends AbstractMiniSat {
 
-  def this() = this(Int.MaxValue, Int.MaxValue)
+  def this() = this(Int.MaxValue)
 
   private val assumptions: IntVec = new IntVec()
 
   // AutoReset functionality to hold assumption vars small  
   private var fullResetCounter = 0
   private val CALLSUNTILFULLRESET = callsUntilFullReset
-  private val ASSUMPTIONSUNTILFULLRESET = assumptionsUntilFullReset
 
   // for dimacs output
   private var hardClauses: List[ClauseLike[PL, PLLiteral]] = Nil
@@ -63,8 +62,8 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
   // no extra init necessary
 
   override def name = {
-    var option = "-" + callsUntilFullReset + "-" + assumptionsUntilFullReset
-    if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionsUntilFullReset) {
+    var option = "-" + callsUntilFullReset
+    if (Int.MaxValue == callsUntilFullReset) {
       option = ""
     }
     "MiniSatAssumptionAllowDoubles" + option
@@ -154,7 +153,7 @@ class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int, assumptionsUntilFu
     // bei undo assumption variablen vergessen
     lastState = Solver.UNKNOWN
     if (!assumptionClauses.isEmpty) {
-      if (fullResetCounter < CALLSUNTILFULLRESET || assumptions.size() < ASSUMPTIONSUNTILFULLRESET) {
+      if (fullResetCounter < CALLSUNTILFULLRESET) {
         val assumptionVar = MSJCoreProver.`var`(assumptions.last())
         // assumption variable als unit clause hinzufügen
         val unitClause = new IntVec(1)
