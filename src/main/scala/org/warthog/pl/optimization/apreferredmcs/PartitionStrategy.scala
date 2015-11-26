@@ -34,7 +34,7 @@ object PartitionStrategy {
 
   def linearSearch() = new PartitionMaker("linearSearch", (_, size) => size)
 
-  def fastDiag() = new PartitionMaker("fastDiag", (_, _) => 2)
+  def fastDiag() = new PartitionMaker("2", (_, _) => 2)
 
   def constant(k: Int) = new PartitionMaker(k.toString, (_, _) => k)
 
@@ -52,7 +52,7 @@ object PartitionStrategy {
       else k
     })
 
-  def maxSizeHierachized(max1: Int, max2: Int) = new PartitionMaker("maxSizeHierarchized-" + max1 + "-" + max2,
+  def maxSizeHierachized(max1: Int, max2: Int) = new PartitionMaker("maxSize-" + max1 + "-" + max2,
     (recursionDepth, size) => recursionDepth match {
       case 1 => {
         val k = size / max1
@@ -67,7 +67,7 @@ object PartitionStrategy {
       case _ => size
     })
 
-  def maxSizeFastDiag(max: Int) = new PartitionMaker("maxSizeFastDiag-" + max,
+  def maxSizeFastDiag(max: Int) = new PartitionMaker("maxSize-" + max + "-FastDiag",
     (recursionDepth, size) => recursionDepth match {
       case 1 => {
         val k = size / max

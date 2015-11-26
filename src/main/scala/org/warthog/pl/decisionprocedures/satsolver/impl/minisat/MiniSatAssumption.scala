@@ -44,9 +44,9 @@ import scala.util.control.Breaks.{ break, breakable }
  *
  * @author Konstantin Grupp
  */
-class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int) extends AbstractMiniSat {
+class MiniSatAssumption(callsUntilFullReset: Int) extends AbstractMiniSat {
 
-  def this() = this(Int.MaxValue, Int.MaxValue)
+  def this() = this(Int.MaxValue)
 
   private val clauseToVar = HashMap[ClauseLike[PL, PLLiteral], Int]()
   private val clauseToID = HashMap[ClauseLike[PL, PLLiteral], Int]()
@@ -55,7 +55,6 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
   // AutoReset functionality to hold assumption vars small  
   private var fullResetCounter = 0
   private val CALLSUNTILFULLRESET = callsUntilFullReset
-  private val ASSUMPTIONSUNTILFULLRESET = assumptionsUntilFullReset
 
   // for dimacs output
   private var hardClauses: List[ClauseLike[PL, PLLiteral]] = Nil
@@ -65,8 +64,8 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
   // no extra init necessary
 
   override def name = {
-    var option = "-" + callsUntilFullReset + "-" + assumptionsUntilFullReset
-    if (Int.MaxValue == callsUntilFullReset && Int.MaxValue == assumptionsUntilFullReset) {
+    var option = "-" + callsUntilFullReset
+    if (Int.MaxValue == callsUntilFullReset) {
       option = ""
     }
     "MinisatAssumption" + option
@@ -167,7 +166,7 @@ class MiniSatAssumption(callsUntilFullReset: Int, assumptionsUntilFullReset: Int
     // TODO bei undo assumption variablen vergessen
     lastState = Solver.UNKNOWN
     if (!assumptionClauses.isEmpty) {
-      if (fullResetCounter < CALLSUNTILFULLRESET || assumptions.size() < ASSUMPTIONSUNTILFULLRESET) {
+      if (fullResetCounter < CALLSUNTILFULLRESET) {
         for (clause <- assumptionClauses.head) {
           if (!clauseToID.contains(clause)) {
             println(clause)
