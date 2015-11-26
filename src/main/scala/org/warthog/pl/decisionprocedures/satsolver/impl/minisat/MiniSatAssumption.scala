@@ -68,7 +68,7 @@ class MiniSatAssumption(callsUntilFullReset: Int) extends AbstractMiniSat {
     if (Int.MaxValue == callsUntilFullReset) {
       option = ""
     }
-    "MinisatAssumption" + option
+    "MiniSatAssumption" + option
   }
 
   override def reset() {
