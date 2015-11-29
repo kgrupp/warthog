@@ -45,7 +45,7 @@ import org.warthog.pl.formulas.PLAtom
  *
  * @author Konstantin Grupp
  */
-class MiniSatAssumptionAllowDoubles(callsUntilFullReset: Int) extends AbstractMiniSat {
+class MiniSatOpt(callsUntilFullReset: Int) extends AbstractMiniSat {
 
   def this() = this(Int.MaxValue)
 

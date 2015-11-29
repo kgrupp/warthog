@@ -30,7 +30,7 @@ import org.specs2.mutable.Specification
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.{ ImmutablePLClause => Clause }
 import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatAssumptionAllowDoubles
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatOpt
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatJava
@@ -51,7 +51,7 @@ class LinearSearchTest extends Specification {
   private def testWCNFDIMACSFile(subFolder: String, fileName: String, expResult: Option[List[Int]]) {
     val solverLis = List(new LinearSearch(new MiniSatJava()),
         new LinearSearch(new MiniSatAssumption()),
-        new LinearSearch(new MiniSatAssumptionAllowDoubles(), true))
+        new LinearSearch(new MiniSatOpt(), true))
     for (solver <- solverLis) {
       val expText = if (expResult.isEmpty) "no solution" else "solution " + expResult.get.size
       "File " + fileName + " with " + solver.name should {
@@ -98,7 +98,7 @@ class LinearSearchTest extends Specification {
   testWCNFDIMACSFile("randomVertexCover", "edges00150_vertices00020.wcnf", Some(List(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19)))
   
   private def testWCNFDIMACSFile2(subFolder: String, fileName: String, result1: Int) {
-    val satSolver = new MiniSatAssumptionAllowDoubles()
+    val satSolver = new MiniSatOpt()
     val solver = new LinearSearch(satSolver)
     "File " + fileName should {
       "have " + result1 + " MCS clauses" in {

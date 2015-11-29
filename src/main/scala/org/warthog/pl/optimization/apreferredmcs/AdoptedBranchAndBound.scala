@@ -333,7 +333,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
    * Checks whether the current lower bound is not preferred to the upper bound
    */
   private def antilexLeq(lis1: Vec[Int], lis2: Vec[Int]): Boolean = {
-    if (lis1.isEmpty) {
+    if ((lis1 == lis2) || lis1.isEmpty) {
       return true
     } else if (lis2.isEmpty) {
       return false

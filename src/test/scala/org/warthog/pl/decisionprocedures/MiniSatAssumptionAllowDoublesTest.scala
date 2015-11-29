@@ -37,7 +37,7 @@ import org.warthog.generic.formulas.Not
 import org.warthog.generic.parsers.DIMACSReader
 import org.warthog.generic.formulas.Falsum
 import org.warthog.generic.formulas.Verum
-import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatAssumptionAllowDoubles
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatOpt
 
 /**
  * Tests for the picosat bindings
@@ -62,7 +62,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
 
   "1 | ~2 | 3 | 4" should {
     "be satisfiable" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         (solver: Solver) =>
           {
@@ -86,7 +86,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
 
   "~x" should {
     "be satisfiable" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         (solver: Solver) =>
           {
@@ -97,7 +97,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
       resultValue0 must be equalTo Solver.SAT
     }
     "be satisfied by model ~x" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         (solver: Solver) =>
           {
@@ -114,7 +114,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
 
   "x" should {
     "be satisfiable" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         (solver: Solver) =>
           {
@@ -125,7 +125,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
       resultValue0 must be equalTo Solver.SAT
     }
     "be unsatisfiable after adding -x" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         solver =>
           {
@@ -137,7 +137,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
       resultValue0 must be equalTo Solver.UNSAT
     }
     "be satisfied by model x" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         (solver: Solver) =>
           {
@@ -152,7 +152,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
       model.get.positiveVariables must contain(x)
     }
     "be unsatisfiable after adding -x, satisfiable again after dropping -x" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         solver =>
           {
@@ -170,7 +170,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
   }
   "the empty clause" should {
     "be satisfiable" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         s =>
           {
@@ -184,7 +184,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
 
   "the empty formula" should {
     "be satisfiable" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         s =>
           {
@@ -198,7 +198,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
 
   "the verum" should {
     "return true upon sat checking" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         s =>
           {
@@ -214,7 +214,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
 
   "x and -x" should {
     "be unsatisfiable even after multiple undo calls" in {
-      val prover = new MiniSatAssumptionAllowDoubles()
+      val prover = new MiniSatOpt()
       sat(prover) {
         s =>
           {
@@ -234,7 +234,7 @@ class MiniSatAssumptionAllowDoublesTest extends Specification {
     "File " + fileName should {
       "be " + expText in {
         var resultVal = 0
-        val prover = new MiniSatAssumptionAllowDoubles()
+        val prover = new MiniSatOpt()
         sat(prover) {
           (solver: Solver) =>
             {
