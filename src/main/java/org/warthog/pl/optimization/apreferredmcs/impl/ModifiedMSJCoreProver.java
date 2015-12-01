@@ -40,6 +40,12 @@ import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.datas
  * Modified MiniSAT Java
  */
 public class ModifiedMSJCoreProver {
+
+	// //////////
+	// Options //
+	// //////////
+	private boolean avoidResets = true;
+
 	// ////////////////////
 	// The solver state //
 	// ////////////////////
@@ -121,7 +127,7 @@ public class ModifiedMSJCoreProver {
 		MSJVariable newVar = new MSJVariable(index);
 		vars.push(newVar);
 		if (isAssumpVar) {
-			newVar.setActivityToConstant(Integer.MAX_VALUE-index);
+			newVar.setActivityToConstant(Integer.MAX_VALUE - index);
 			firstDecisionsVarHeap.insert(newVar);
 			maxFirstDecisions++;
 		} else {
@@ -135,7 +141,6 @@ public class ModifiedMSJCoreProver {
 	}
 
 	public void newClause(IntVec clauseVec, boolean learnt) {
-		//System.out.println("new Clause: "+clauseVec + " learnt: "+learnt);
 		if (!ok) {
 			return;
 		}
@@ -271,7 +276,6 @@ public class ModifiedMSJCoreProver {
 			Thread.sleep(0); // to handle interrupts
 			MSJClause confl = propagate();
 			if (confl != null) {
-				//System.out.println("KONFLIKT: "+confl + "OK = " + ok);
 				stats.conflicts++;
 				conflCount++;
 				IntVec learntClause = new IntVec();
@@ -305,7 +309,8 @@ public class ModifiedMSJCoreProver {
 					}
 				}
 			} else {
-				if (nof_conflicts >= 0 && conflCount >= nof_conflicts) {
+				if (!avoidResets && nof_conflicts >= 0
+						&& conflCount >= nof_conflicts) {
 					cancelUntil(rootLevel, true);
 					return LBool.UNDEF;
 				}
@@ -442,7 +447,8 @@ public class ModifiedMSJCoreProver {
 					}
 				}
 			}
-			while (!seen.get(var(trail.get(index--))));
+			while (!seen.get(var(trail.get(index--))))
+				;
 			conflictLit = trail.get(index + 1);
 			confl = v(conflictLit).reason();
 			seen.set(var(conflictLit), false);
@@ -576,7 +582,7 @@ public class ModifiedMSJCoreProver {
 			}
 		}
 	}
-	
+
 	protected void cancelUntil(int level) {
 		cancelUntil(level, false);
 	}
@@ -593,7 +599,7 @@ public class ModifiedMSJCoreProver {
 						} else {
 							var.setPolarity(false);
 						}
-						
+
 						currentFirstDecisions--;
 						if (firstDecisionsVarHeap.find(var) == -1) {
 							firstDecisionsVarHeap.insert(var);
@@ -621,7 +627,8 @@ public class ModifiedMSJCoreProver {
 					return mkLit(next.num(), next.polarity());
 				}
 			}
-			throw new AssertionError("should not happen: currentFirstDecisions <= maxFirstDecisions but all vars are defined");
+			throw new AssertionError(
+					"should not happen: currentFirstDecisions <= maxFirstDecisions but all vars are defined");
 		} else {
 			while (!varHeap.isEmpty()) {
 				MSJVariable next = varHeap.heapExtractMax();
@@ -650,7 +657,6 @@ public class ModifiedMSJCoreProver {
 			if (isFirstDecisionVar.get(var(lit))) {
 				currentFirstDecisions++;
 			}
-			//System.out.println("set var " + var + " level: " + decisionLevel() + " currentFD: " + currentFirstDecisions + " reason: " + reason);
 			return true;
 		}
 	}
@@ -886,4 +892,5 @@ public class ModifiedMSJCoreProver {
 	public LBool getVarState(int variable) {
 		return model.get(variable);
 	}
+	
 }
