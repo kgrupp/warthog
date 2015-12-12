@@ -32,13 +32,15 @@ import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.optimization.apreferredmcs.impl.TimeUsed
 
 /**
+ * A helper class for algorithms which use a SAT Solver
+ * 
  * @author Konstantin Grupp
  */
 abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferredMCSSolver {
 
   def satSolverName = satSolver.name
 
-  val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
+  protected val (tUsat, tUsatAdd, tUsatDel) = (new TimeUsed("sat"), new TimeUsed("sat_add_clauses"), new TimeUsed("sat_del_clauses"))
   timeUsed = List(tUsat, tUsatAdd, tUsatDel)
 
   override def reset() {
@@ -74,6 +76,13 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
 
   override protected def areHardConstraintsSatisfiable() = sat()
 
+  /**
+   * Makes a mark, adds the given clauses to the sat solver and calculates if the formula is satisfiable
+   *
+   * Note: Makes a mark but does not call the undo() operation
+   *
+   * @param clauses the clauses which will be added
+   */
   protected def sat(clauses: Traversable[ClauseLike[PL, PLLiteral]] = Set.empty): Boolean = {
     if (!clauses.isEmpty) {
       tUsatAdd.start
@@ -101,9 +110,11 @@ abstract class SATBasedAPreferredMCSSolver(satSolver: Solver) extends APreferred
   }
 
   /**
-   * Makes a mark but does not call the undo() operation
-   * 
-   * TODO javadoc
+   * Makes a mark, adds the given clause to the sat solver and calculates if the formula is satisfiable
+   *
+   * Note: Makes a mark but does not call the undo() operation
+   *
+   * @param clause the clause which will be added
    */
   protected def sat(clause: ClauseLike[PL, PLLiteral]): Boolean = {
     tUsatAdd.start

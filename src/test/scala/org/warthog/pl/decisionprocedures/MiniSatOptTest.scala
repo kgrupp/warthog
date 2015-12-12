@@ -40,11 +40,11 @@ import org.warthog.generic.formulas.Verum
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisat.MiniSatOpt
 
 /**
- * Tests for the picosat bindings
+ * Tests for the MiniSatOpt adapter
  *
  * @author Konstantin Grupp
  */
-class MiniSatAssumptionAllowDoublesTest extends Specification {
+class MiniSatOptTest extends Specification {
   /*
    * Throws errors when not executed sequential
    */ // TODO

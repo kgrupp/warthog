@@ -46,6 +46,9 @@ import org.warthog.pl.optimization.apreferredmcs.impl.VariableBAB
 
 /**
  * @author Konstantin Grupp
+ * 
+ * Implements an optimized version of the adopted branch and bound algorithm which was published in
+ * 'Suggestions for Improvements of Preferred Minimal Correction Subset Computiation' (2015)
  */
 class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolver(satSolver) {
 
@@ -275,7 +278,7 @@ class AdoptedBranchAndBound(satSolver: Solver) extends SATBasedAPreferredMCSSolv
     
     // sort satNew and emptyNew because they may be not in order to do a combination in linear time
     var clID = 0
-    val emptyNewSorted = emptyNew.sortWith(_ < _).distinct // TODO efficient duplicate elimination
+    val emptyNewSorted = emptyNew.sortWith(_ < _).distinct // TODO implement more efficient duplicate elimination
 
     var itNewEm = emptyNewSorted.iterator
     var clNewEm = Integer.MAX_VALUE

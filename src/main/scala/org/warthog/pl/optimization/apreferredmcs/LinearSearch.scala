@@ -34,6 +34,8 @@ import org.warthog.pl.datastructures.cnf.ImmutablePLClause
 
 /**
  * Linear Search algorithm for A-preferred MCS.
+ * 
+ * Note: Optional there backbone literals can be activated
  *
  * @author Konstantin Grupp
  */

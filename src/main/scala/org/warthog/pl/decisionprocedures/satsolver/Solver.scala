@@ -66,7 +66,11 @@ trait Solver {
   def add(clause: ClauseLike[PL, PLLiteral])
   
   /**
-   * TODO javadoc
+   * Add a clause to the solver which is not affected by the methods mark() and undo()
+   * 
+   * In case of partial sat solving this method can be used for hard clauses.
+   * 
+   * @param clause the clause to add
    */
   def addHard(clause: ClauseLike[PL, PLLiteral])
   
@@ -89,9 +93,9 @@ trait Solver {
   def undo()
 
   /**
-   * Does not delete any clauses but forget the last mark
+   * Does not delete any clauses but forget the last mark. Therefore all clauses, 
+   * which were added since the last call of the method mark(), become hard clauses.
    * 
-   * TODO javadoc
    */
   def forgetLastMark()
   
@@ -101,8 +105,22 @@ trait Solver {
    */
   def sat(): Int
 
+  /**
+   * Returns the Model of the last sat call.
+   * 
+   * Note: Has to be called directly after calling the method sat() to work properly.
+   * 
+   */
   def getModel(): Option[Model]
 
+  /**
+   * Returns the state which the given variable has in the model. Returns None if the variable is undefined.
+   * This method is more efficient, if only a few variable states are needed. (example: model exploiting)
+   * 
+   * Note: Has to be called directly after calling the method sat() to work properly.
+   * 
+   * @param variable the variable 
+   */
   def getVarState(variable: PLAtom): Option[Boolean]
 
 }

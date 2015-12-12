@@ -37,7 +37,8 @@ import scala.util.control.Breaks.{ break, breakable }
 import org.warthog.pl.optimization.apreferredmcs.impl.ModelExploiting
 
 /**
- * Implements the general chunks approach (4.1 from paper)
+ * Implements an optimized version of the general chunks approach which was published in
+ * 'Suggestions for Improvements of Preferred Minimal Correction Subset Computiation' (2015)
  *
  * @author Konstantin Grupp
  */

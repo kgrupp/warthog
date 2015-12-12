@@ -28,6 +28,8 @@ package org.warthog.pl.optimization.apreferredmcs
 import org.warthog.pl.optimization.apreferredmcs.impl.PartitionMaker
 
 /**
+ * Provides different strategies for the general chunks algorithm
+ * 
  * @author Konstantin Grupp
  */
 object PartitionStrategy {

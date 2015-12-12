@@ -41,7 +41,7 @@ import org.warthog.generic.formulas.Falsum
 import org.warthog.generic.formulas.Verum
 
 /**
- * Tests for the picosat bindings
+ * Tests for the MiniSatAssumptin adapter
  *
  * @author Konstantin Grupp
  */

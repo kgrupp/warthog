@@ -34,7 +34,7 @@ import java.io.File
 import org.warthog.generic.parsers.DIMACSReader
 
 /**
- * Tests for the MiniSatJava bindings
+ * Tests for the MiniSatJava adapter
  */
 class MiniSatJavaTest extends Specification {
   args(sequential = true)

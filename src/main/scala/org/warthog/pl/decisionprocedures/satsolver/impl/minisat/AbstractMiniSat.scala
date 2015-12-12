@@ -36,7 +36,7 @@ import org.warthog.pl.datastructures.cnf.PLLiteral
 import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
 
 /**
- * Abstract class for a Adapter to MSJCoreProver
+ * Abstract class for a adapter to MSJCoreProver
  */
 abstract class AbstractMiniSat extends Solver {
   protected var miniSatJavaInstance = new MSJCoreProver()

@@ -12,7 +12,10 @@ import org.warthog.pl.formulas.PLAtom
 import org.warthog.pl.optimization.apreferredmcs.impl.ModifiedMSJCoreProver
 
 /**
- * Uses Normalization and Reduction
+ * Implements an optimized version of the Normalization and Reduction approach which was published in
+ * 'Suggestions for Improvements of Preferred Minimal Correction Subset Computiation' (2015)
+ * 
+ * Uses the ModifiedMSJCoreProver for the calculation.
  * 
  * @author Konstantin Grupp
  */
