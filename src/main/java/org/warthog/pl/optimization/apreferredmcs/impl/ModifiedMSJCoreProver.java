@@ -311,7 +311,7 @@ public class ModifiedMSJCoreProver {
 			} else {
 				if (!avoidResets && nof_conflicts >= 0
 						&& conflCount >= nof_conflicts) {
-					cancelUntil(rootLevel, true);
+					cancelUntil(rootLevel);
 					return LBool.UNDEF;
 				}
 				if (decisionLevel() == 0) {
@@ -584,22 +584,12 @@ public class ModifiedMSJCoreProver {
 	}
 
 	protected void cancelUntil(int level) {
-		cancelUntil(level, false);
-	}
-
-	protected void cancelUntil(int level, boolean resetPolarity) {
 		if (decisionLevel() > level) {
 			for (int c = trail.size() - 1; c >= trailLimits.get(level); c--) {
 				MSJVariable var = v(trail.get(c));
 				if (var.level() != 0) {
 					var.assign(LBool.UNDEF);
 					if (isFirstDecisionVar.get(var.num())) {
-						if (!resetPolarity && var.reason() == null) {
-							var.setPolarity(sign(trail.get(c)));
-						} else {
-							var.setPolarity(false);
-						}
-
 						currentFirstDecisions--;
 						if (firstDecisionsVarHeap.find(var) == -1) {
 							firstDecisionsVarHeap.insert(var);
