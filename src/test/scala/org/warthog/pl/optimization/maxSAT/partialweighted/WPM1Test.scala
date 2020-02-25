@@ -27,7 +27,6 @@ package org.warthog.pl.optimization.maxsat.partialweighted
 
 import org.specs2.mutable.Specification
 import java.io.File
-import org.warthog.pl.optimization.maxsat.partialWeighted.{BinarySearch, WPM1, LinearSearch, PartialWeightedMaxSATSolver}
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
 import org.warthog.pl.decisionprocedures.satsolver.impl.picosat.Picosat
 import org.warthog.pl.generators.pbc.BailleuxBoufkhadRoussel

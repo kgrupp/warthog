@@ -1,6 +1,6 @@
 c
 c This is a simple CNF formula in DIMACS Format
-c Optimum: 5
+c Optimum: 5 ((-1), (-2), (-3), (-4), (-5)) 
 c
 p wcnf 5 10 50
 50 1 0

@@ -23,7 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.optimization.maxsat.partialWeighted
+package org.warthog.pl.optimization.maxsat.partialweighted
 
 import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
 import org.warthog.pl.datastructures.cnf.{PLLiteral, MutablePLClause, ImmutablePLClause}

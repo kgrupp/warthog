@@ -27,34 +27,29 @@ package org.warthog.pl.decisionprocedures.satsolver.impl.minisat
 
 import scala.collection.mutable.Map
 import scala.collection.JavaConverters._
-
-import org.warthog.pl.formulas.{PLAtom, PL}
+import org.warthog.pl.formulas.{ PLAtom, PL }
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.core.MSJCoreProver
 import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.collections.nativeType.IntVec
+import org.warthog.pl.decisionprocedures.satsolver.impl.minisatjava.prover.datastructures.LBool
 import org.warthog.generic.datastructures.cnf.ClauseLike
 import org.warthog.pl.datastructures.cnf.PLLiteral
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
+import org.warthog.pl.decisionprocedures.satsolver.{ Model, Solver }
 
 /**
  * Solver Wrapper for MiniSatJava.
  */
-class MiniSatJava extends Solver {
-  private var miniSatJavaInstance = new MSJCoreProver()
-  private val varToID = Map[PLAtom, Int]()
-  private val idToVar = Map[Int, PLAtom]()
+class MiniSatJava extends AbstractMiniSat {
+  private var hardClauses: List[ClauseLike[PL, PLLiteral]] = Nil
   private var clausesStack: List[ClauseLike[PL, PLLiteral]] = Nil
   private var marks: List[Int] = Nil
-  private var lastState = Solver.UNKNOWN
 
   override def name = "MiniSatJava"
 
   override def reset() {
-    miniSatJavaInstance = new MSJCoreProver
-    varToID.clear()
-    idToVar.clear()
+    super.reset()
+    hardClauses = Nil
     clausesStack = Nil
     marks = Nil
-    lastState = Solver.UNKNOWN
   }
 
   override def add(clause: ClauseLike[PL, PLLiteral]) {
@@ -66,15 +61,19 @@ class MiniSatJava extends Solver {
       lastState = Solver.UNKNOWN
   }
 
+  override def addHard(clause: ClauseLike[PL, PLLiteral]) {
+    hardClauses = (clause :: hardClauses)
+    addClauseToSolver(clause)
+
+    /* an unsatisfiable formula doesn't get satisfiable by adding clauses */
+    if (lastState != Solver.UNSAT)
+      lastState = Solver.UNKNOWN
+  }
+
   private def addClauseToSolver(clause: ClauseLike[PL, PLLiteral]) {
     val clauseAsIntVec = new IntVec(clause.literals.map(literal => {
-      val (v, phase) = (literal.variable, literal.phase)
-      val id = varToID.getOrElseUpdate(v, {
-        miniSatJavaInstance.newVar()
-        val nextID = varToID.size
-        idToVar += (nextID -> v)
-        nextID
-      })
+      val (variable, phase) = (literal.variable, literal.phase)
+      val id = getVariableOrElseUpdate(variable)
       MSJCoreProver.mkLit(id, !phase)
     }).toArray)
 
@@ -87,52 +86,35 @@ class MiniSatJava extends Solver {
 
   override def undo() {
     marks match {
-      case h :: t => {
-        marks = t
-        miniSatJavaInstance = new MSJCoreProver
-        varToID.clear()
-        idToVar.clear()
-        clausesStack = clausesStack.drop(clausesStack.length - h)
+      case head :: tail => {
+        marks = tail
+        super.reset()
+        clausesStack = clausesStack.drop(clausesStack.length - head)
+        hardClauses.foreach(addClauseToSolver(_))
         clausesStack.foreach(addClauseToSolver(_))
-        lastState = Solver.UNKNOWN
       }
       case _ => // No mark, then ignore undo
     }
   }
 
+  override def forgetLastMark() {
+    marks match {
+      case head :: tail => {
+        val (newClausesStack, newHardClauses) = clausesStack.splitAt(clausesStack.length - head)
+        newHardClauses.foreach(clause => hardClauses = clause :: hardClauses)
+        clausesStack = newClausesStack
+        marks = tail
+      }
+      case _ => // No mark, then ignore forgetLastMark
+    }
+
+  }
+
   override def sat(): Int = {
     if (lastState == Solver.UNKNOWN)
-    /* call sat only if solver is in unknown state */
-      lastState = MiniSatJava.miniSatJavaStateToSolverState(miniSatJavaInstance.solve())
+      /* call sat only if solver is in unknown state */
+      lastState = AbstractMiniSat.miniSatJavaStateToSolverState(miniSatJavaInstance.solve())
     lastState
   }
 
-  override def getModel(): Option[Model] = {
-    require(lastState == Solver.SAT || lastState == Solver.UNSAT, "getModel(): Solver needs to be in SAT or UNSAT state!")
-
-    lastState match {
-      case Solver.UNSAT => None
-      case Solver.SAT => {
-        val miniSatJavaModel: List[Integer] = miniSatJavaInstance.getModel().asScala.toList
-        val positiveVariables = miniSatJavaModel.filter {
-          lit => !MSJCoreProver.sign(lit)
-        }.map {
-          lit => idToVar(MSJCoreProver.`var`(lit))
-        }.toList
-        val negativeVariables = miniSatJavaModel.filter {
-          lit => MSJCoreProver.sign(lit)
-        }.map {
-          lit => idToVar(MSJCoreProver.`var`(lit))
-        }.toList
-        Some(Model(positiveVariables, negativeVariables))
-      }
-    }
-  }
-}
-
-object MiniSatJava {
-  private def miniSatJavaStateToSolverState(miniSatJavaState: Boolean) = miniSatJavaState match {
-    case false => Solver.UNSAT
-    case true => Solver.SAT
-  }
 }
